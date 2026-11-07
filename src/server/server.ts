@@ -149,6 +149,10 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
 createServer((req, res) => {
   handle(req, res).catch((e: Error & { status?: number }) => sendJson(res, e.status ?? 500, { error: e.message }));
+}).on("error", (e: NodeJS.ErrnoException) => {
+  if (e.code !== "EADDRINUSE") throw e;
+  console.error(`Port ${PORT} is already in use. Stop the other server or pick another port: PORT=${PORT + 1} npm start`);
+  process.exit(1);
 }).listen(PORT, "127.0.0.1", () => {
   console.log(`Jev Workbench on http://127.0.0.1:${PORT}  (caps: Jev $${CAPS.jev}, Opus $${CAPS.opus})`);
   if (!existsSync(join(PUBLIC, "app.js"))) console.warn("public/app.js is missing: run `npm run build` first");
