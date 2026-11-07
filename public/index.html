@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev Workbench</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e3e2dd;
+  --accent: #3b5bdb; --accent-ink: #ffffff; --soft: #eef1fd;
+  --yes: #2f9e44; --no: #c92a2a; --mid: #e67700; --code: #f1f0ec;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161615; --panel: #1f1f1d; --ink: #ecebe6; --muted: #9a9993; --line: #33332f;
+    --accent: #7c93f5; --accent-ink: #10131f; --soft: #252a3d;
+    --yes: #69db7c; --no: #ff8787; --mid: #ffc078; --code: #262624;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 16px; padding: 10px 20px; flex-wrap: wrap; }
+header h1 { font-size: 16px; margin: 0; }
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
+nav a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 6px; }
+nav a:hover { background: var(--soft); color: var(--ink); }
+#status { margin-left: auto; color: var(--muted); font-size: 12px; }
+main { max-width: 1180px; margin: 0 auto; padding: 16px 20px 80px; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
+section > h2 { margin: 0 0 4px; font-size: 15px; }
+section > h2 span { color: var(--muted); font-weight: 500; margin-right: 6px; }
+.hint { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
+label { font-size: 12.5px; color: var(--muted); display: block; margin: 8px 0 3px; }
+input[type=text], input[type=number], textarea, select {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 8px; }
+textarea { resize: vertical; min-height: 54px; }
+input[type=number] { width: 90px; }
+button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button:disabled { opacity: .5; cursor: default; }
+button.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 2px 6px; }
+button.ghost:hover { color: var(--no); }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > .grow { flex: 1; min-width: 200px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+.tablewrap { overflow: auto; max-height: 420px; border: 1px solid var(--line); border-radius: 6px; margin-top: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td { border-bottom: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { position: sticky; top: 0; background: var(--panel); font-weight: 600; white-space: nowrap; }
+td.clip { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tr.clickable { cursor: pointer; } tr.clickable:hover td { background: var(--soft); }
+.cols { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px;
+  padding: 2px 9px; font-size: 12px; background: var(--bg); cursor: pointer; user-select: none; }
+.chip.on { background: var(--soft); border-color: var(--accent); }
+.chip .x { color: var(--muted); cursor: pointer; } .chip .x:hover { color: var(--no); }
+.chip input { border: none; background: transparent; padding: 0; width: 90px; font-size: 12px; }
+.qcard { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 10px 0; background: var(--bg); }
+.qcard.off { opacity: .55; }
+.qcard.bad { border-color: var(--no); }
+.qhead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.qhead input.qid { width: 220px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+.qhead select { width: auto; }
+.qhead .spacer { flex: 1; }
+.why { color: var(--muted); font-size: 12px; margin-top: 6px; font-style: italic; }
+.opt { display: grid; grid-template-columns: 200px 1fr auto; gap: 6px; margin: 4px 0; align-items: start; }
+.opt input.name { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+.lvl { display: grid; grid-template-columns: 28px 1fr auto auto auto; gap: 6px; margin: 4px 0; align-items: start; }
+.lvl .n { color: var(--muted); padding-top: 6px; text-align: right; font-family: ui-monospace, Menlo, monospace; }
+.err { color: var(--no); font-size: 12px; margin-top: 6px; }
+.note { background: var(--soft); border-radius: 8px; padding: 10px 12px; margin-top: 12px; font-size: 13px; white-space: pre-wrap; }
+.note h3 { margin: 0 0 4px; font-size: 13px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+.tabs button.on { background: var(--soft); border-color: var(--accent); }
+pre { background: var(--code); border-radius: 8px; padding: 12px; overflow: auto; max-height: 460px; font-size: 12px; margin: 0; }
+.progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 10px 0; }
+.progress div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.yes { color: var(--yes); font-weight: 600; } .no { color: var(--no); font-weight: 600; } .mid { color: var(--mid); font-weight: 600; }
+.summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin-top: 12px; }
+.sumcard { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--bg); font-size: 12.5px; }
+.sumcard b { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.bar { display: grid; grid-template-columns: 1fr 120px 36px; gap: 6px; align-items: center; margin: 3px 0; }
+.bar .track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--accent); }
+.bar span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink);
+  max-width: min(900px, 94vw); width: 900px; padding: 16px 18px; }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+.muted { color: var(--muted); }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg);
+  padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Jev Workbench</h1>
+  <nav>
+    <a href="#s-data">1 · Dataset</a><a href="#s-gen">2 · Generar</a><a href="#s-q">3 · Preguntas</a>
+    <a href="#s-export">4 · Exportar</a><a href="#s-run">5 · Ejecutar</a>
+  </nav>
+  <div id="status">…</div>
+</header>
+<main>
+
+<section id="s-data">
+  <h2><span>1</span>Dataset</h2>
+  <p class="hint">CSV (coma, punto y coma o tab), JSON (array de objetos) o JSONL. Cada fila se convierte en el state
+    <code>{"context": …, "record": {columna: valor}}</code>. Marca solo las columnas que las preguntas necesitan: cada campo irrelevante resta precisión.</p>
+  <div class="row">
+    <input type="file" id="file" accept=".csv,.tsv,.json,.jsonl,.txt">
+    <button id="pasteBtn">Pegar datos…</button>
+    <button id="exampleBtn">Cargar ejemplo</button>
+    <span id="dataInfo" class="muted"></span>
+  </div>
+  <label>Columnas en el state</label>
+  <div class="cols" id="cols"></div>
+  <div class="row" style="margin-top:8px">
+    <label style="margin:0"><input type="checkbox" id="dropEmpty" checked> omitir valores vacíos</label>
+  </div>
+  <label for="context">Contexto compartido (opcional): hechos que el modelo no sabe y valen para todas las filas</label>
+  <textarea id="context" placeholder="Ej.: Son tickets de soporte de Acme, una app de facturación. 'Plan Pro' es el plan de pago."></textarea>
+  <div class="row" style="margin-top:10px">
+    <label style="margin:0">Muestra</label><input type="number" id="sampleSize" min="1" max="200" value="15">
+    <button id="resample">Volver a muestrear</button>
+    <span class="muted" id="sampleInfo"></span>
+  </div>
+  <div class="tablewrap" id="preview"></div>
+</section>
+
+<section id="s-gen">
+  <h2><span>2</span>Generar preguntas con Opus 5.5</h2>
+  <p class="hint">Describe qué quiere decidir tu aplicación con estos datos. Opus ve el objetivo, las columnas y la muestra, y propone preguntas atómicas para Jev (Choice, Noul, Score) más un boceto de la lógica de decisión, que va en tu código.</p>
+  <label for="goal">Objetivo</label>
+  <textarea id="goal" placeholder="Ej.: Enrutar cada ticket al equipo correcto y detectar los que hay que escalar porque el cliente amenaza con irse."></textarea>
+  <div class="row" style="margin-top:10px">
+    <label style="margin:0">Nº de preguntas</label><input type="number" id="nq" min="1" max="40" value="8">
+    <label style="margin:0"><input type="checkbox" id="replaceQs" checked> reemplazar las actuales</label>
+    <button class="primary" id="genBtn">Generar</button>
+    <span class="muted" id="genInfo"></span>
+  </div>
+  <div id="genNotes"></div>
+</section>
+
+<section id="s-q">
+  <h2><span>3</span>Preguntas</h2>
+  <p class="hint">Todo es editable. Los IDs no se envían al modelo; los nombres de las opciones sí. Las tags agrupan preguntas: pulsa una tag de abajo para activar o desactivar todas las suyas.</p>
+  <div class="row">
+    <button id="addNoul">+ Noul</button><button id="addChoice">+ Choice</button><button id="addScore">+ Score</button>
+    <span class="grow"></span>
+    <button id="saveProj">Guardar proyecto</button>
+    <label class="chip" style="margin:0">Cargar proyecto<input type="file" id="loadProj" accept=".json" hidden></label>
+  </div>
+  <div class="cols" id="tagbar"></div>
+  <div id="qlist"></div>
+</section>
+
+<section id="s-export">
+  <h2><span>4</span>Exportar</h2>
+  <p class="hint">Solo las preguntas activas. El ejemplo de state usa la primera fila de la muestra.</p>
+  <div class="tabs" id="exTabs"></div>
+  <div class="row" style="margin-bottom:8px"><button id="copyEx" class="primary">Copiar</button><button id="dlEx">Descargar</button></div>
+  <pre id="exOut"></pre>
+</section>
+
+<section id="s-run">
+  <h2><span>5</span>Ejecutar con Jev</h2>
+  <p class="hint">Una petición por fila con todas las preguntas activas (comparten state, así que se pagan una vez). Umbrales de lectura para Noul: ≥ 0.7 sí, ≤ 0.3 no, en medio sin decidir.</p>
+  <div class="row">
+    <label style="margin:0">Modelo</label>
+    <select id="model" style="width:auto"><option>jev-latest</option><option>jev-1.14.0</option><option>jev-1.13.0</option><option>jev-preview</option></select>
+    <label style="margin:0">Filas</label>
+    <select id="scope" style="width:auto"><option value="sample">la muestra</option><option value="first">las primeras N</option><option value="all">todas</option></select>
+    <input type="number" id="firstN" min="1" value="50">
+    <button class="primary" id="runBtn">Ejecutar</button>
+    <button id="stopBtn" disabled>Parar</button>
+    <span class="muted" id="runInfo"></span>
+  </div>
+  <div class="progress"><div id="prog"></div></div>
+  <div class="summary" id="summary"></div>
+  <div class="row" style="margin-top:12px">
+    <button id="dlCsv" disabled>Descargar CSV</button><button id="dlJsonl" disabled>Descargar JSONL</button>
+    <span class="muted">Haz clic en una fila para ver el state enviado y las respuestas completas.</span>
+  </div>
+  <div class="tablewrap" id="results" style="max-height:560px"></div>
+</section>
+</main>
+
+<dialog id="pasteDlg">
+  <h3 style="margin-top:0">Pegar datos</h3>
+  <textarea id="pasteArea" style="min-height:260px;font-family:ui-monospace,Menlo,monospace;font-size:12px"></textarea>
+  <div class="row" style="margin-top:10px;justify-content:flex-end"><button id="pasteCancel">Cancelar</button><button class="primary" id="pasteOk">Cargar</button></div>
+</dialog>
+<dialog id="rowDlg">
+  <div class="row"><h3 style="margin:0" id="rowTitle"></h3><span class="grow"></span><button id="rowCopy">Copiar petición</button><button id="rowClose">Cerrar</button></div>
+  <div class="grid2" style="margin-top:10px"><div><label>state</label><pre id="rowState"></pre></div><div><label>answers</label><pre id="rowAnswers"></pre></div></div>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const BATCH = 16;
+
+const app = {
+  rows: [], columns: [], selected: [], dropEmpty: true, context: "", sampleIdx: [], sampleSize: 15,
+  goal: "", nq: 8, questions: [], notes: null, results: null, runRows: [], exTab: "json",
+};
+
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+
+// ---------- persistence (per-viewer convenience only) ----------
+const KEY = "jev-workbench-v1";
+function save() {
+  const { rows, results, runRows, ...rest } = app;
+  try { localStorage.setItem(KEY, JSON.stringify(rest)); } catch (e) {}
+  try { localStorage.setItem(KEY + "-rows", JSON.stringify(rows)); } catch (e) { try { localStorage.removeItem(KEY + "-rows"); } catch (e2) {} }
+}
+function load() {
+  try { Object.assign(app, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
+  try { app.rows = JSON.parse(localStorage.getItem(KEY + "-rows") || "[]"); } catch (e) { app.rows = []; }
+  app.results = null; app.runRows = [];
+}
+
+// ---------- parsing ----------
+function parseCSV(text) {
+  text = text.replace(/^﻿/, "");
+  const first = text.split(/\r?\n/, 1)[0];
+  const delim = [",", ";", "\t"].map((d) => [d, first.split(d).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const out = []; let row = [], field = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+      else field += c;
+    } else if (c === '"') q = true;
+    else if (c === delim) { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); field = ""; if (row.some((v) => v !== "")) out.push(row); row = [];
+    } else field += c;
+  }
+  row.push(field); if (row.some((v) => v !== "")) out.push(row);
+  const header = out.shift().map((h, i) => h.trim() || `col_${i + 1}`);
+  return out.map((r) => Object.fromEntries(header.map((h, i) => [h, r[i] ?? ""])));
+}
+function parseData(text, name = "") {
+  const t = text.trim();
+  if (t.startsWith("[")) return JSON.parse(t);
+  if (t.startsWith("{")) {
+    try { const one = JSON.parse(t); return Array.isArray(one) ? one : (Array.isArray(one.rows) ? one.rows : [one]); }
+    catch (e) { return t.split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l)); }
+  }
+  return parseCSV(text);
+}
+function setRows(rows) {
+  rows = rows.filter((r) => r && typeof r === "object" && !Array.isArray(r));
+  if (!rows.length) { toast("No se encontraron filas"); return; }
+  const cols = [];
+  for (const r of rows.slice(0, 500)) for (const k of Object.keys(r)) if (!cols.includes(k)) cols.push(k);
+  app.rows = rows; app.columns = cols; app.selected = cols.slice(); app.results = null;
+  resample(); renderAll(); save();
+}
+function resample() {
+  const n = Math.min(app.sampleSize, app.rows.length);
+  const idx = [...app.rows.keys()];
+  for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  app.sampleIdx = idx.slice(0, n).sort((a, b) => a - b);
+}
+
+// ---------- state + questions in Jev format ----------
+function isEmpty(v) { return v === null || v === undefined || (typeof v === "string" && v.trim() === ""); }
+function stateFor(row) {
+  const record = {};
+  for (const c of app.selected) if (!(app.dropEmpty && isEmpty(row[c]))) record[c] = row[c] ?? null;
+  const s = {};
+  if (app.context.trim()) s.context = app.context.trim();
+  s.record = record;
+  return s;
+}
+function toJev(q) {
+  const out = { type: q.type, instructions: q.instructions };
+  if (q.type === "choice") out.criteria = Object.fromEntries(q.options.map((o) => [o.name, o.description]));
+  if (q.type === "score") out.criteria = q.levels.slice();
+  if (q.type === "noul" && (q.true_criterion.trim() || q.false_criterion.trim())) {
+    out.criteria = {};
+    if (q.true_criterion.trim()) out.criteria.true = q.true_criterion;
+    if (q.false_criterion.trim()) out.criteria.false = q.false_criterion;
+  }
+  return out;
+}
+function activeQs() { return app.questions.filter((q) => q.active !== false); }
+function jevQuestions() { return Object.fromEntries(activeQs().map((q) => [q.id, toJev(q)])); }
+function problems(q) {
+  const p = [];
+  if (!/^[A-Za-z_][A-Za-z0-9_\-]*$/.test(q.id)) p.push("ID vacío o con caracteres raros");
+  if (app.questions.filter((o) => o.id === q.id).length > 1) p.push("ID repetido");
+  if (!q.instructions.trim()) p.push("faltan las instrucciones");
+  if (q.type === "choice") {
+    if (q.options.length < 2) p.push("una Choice necesita al menos 2 opciones");
+    const names = q.options.map((o) => o.name.trim());
+    if (names.some((n) => !n)) p.push("opción sin nombre");
+    if (new Set(names).size !== names.length) p.push("nombres de opción repetidos");
+  }
+  if (q.type === "score" && q.levels.filter((l) => l.trim()).length < 2) p.push("un Score necesita al menos 2 niveles");
+  return p;
+}
+function blankQ(type) {
+  let n = 1; while (app.questions.some((q) => q.id === `${type}_${n}`)) n++;
+  return { id: `${type}_${n}`, type, instructions: "", options: type === "choice" ? [{ name: "", description: "" }, { name: "", description: "" }] : [],
+    levels: type === "score" ? ["", "", ""] : [], true_criterion: "", false_criterion: "", tags: [], why: "", active: true };
+}
+function normalizeQ(q) {
+  return { id: q.id || "", type: q.type || "noul", instructions: typeof q.instructions === "string" ? q.instructions : JSON.stringify(q.instructions ?? ""),
+    options: q.options || [], levels: q.levels || [], true_criterion: q.true_criterion || "", false_criterion: q.false_criterion || "",
+    tags: q.tags || [], why: q.why || "", active: q.active !== false };
+}
+
+// ---------- render: dataset ----------
+function renderData() {
+  $("dataInfo").textContent = app.rows.length ? `${app.rows.length} filas · ${app.columns.length} columnas` : "sin datos";
+  $("cols").innerHTML = app.columns.map((c) => `<span class="chip ${app.selected.includes(c) ? "on" : ""}" data-col="${esc(c)}">${esc(c)}</span>`).join("")
+    || '<span class="muted">Carga un fichero para ver sus columnas.</span>';
+  $("dropEmpty").checked = app.dropEmpty; $("context").value = app.context; $("sampleSize").value = app.sampleSize;
+  $("sampleInfo").textContent = app.rows.length ? `${app.sampleIdx.length} filas en la muestra` : "";
+  if (!app.rows.length) { $("preview").innerHTML = ""; return; }
+  const cols = app.columns;
+  $("preview").innerHTML = `<table><tr><th>#</th>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr>` +
+    app.sampleIdx.map((i) => `<tr><td class="muted">${i}</td>${cols.map((c) => `<td class="clip" title="${esc(app.rows[i][c])}">${esc(fmtCell(app.rows[i][c]))}</td>`).join("")}</tr>`).join("") + "</table>";
+}
+function fmtCell(v) { return typeof v === "object" && v !== null ? JSON.stringify(v) : v; }
+
+// ---------- render: generator notes ----------
+function renderNotes() {
+  const n = app.notes;
+  if (!n) { $("genNotes").innerHTML = ""; return; }
+  $("genNotes").innerHTML =
+    `<div class="note"><h3>Boceto de la lógica de decisión (va en tu código)</h3>${esc(n.decision_sketch)}</div>` +
+    (n.code_notes?.length ? `<div class="note"><h3>Mejor en código que en Jev</h3>${n.code_notes.map((x) => "• " + esc(x)).join("\n")}</div>` : "") +
+    (n.state_columns?.length ? `<div class="note"><h3>Columnas recomendadas para el state</h3>${n.state_columns.map(esc).join(", ")} <button id="applyCols" style="margin-left:8px">Usar estas</button></div>` : "");
+  const b = $("applyCols");
+  if (b) b.onclick = () => { app.selected = app.columns.filter((c) => n.state_columns.includes(c)); renderAll(); save(); toast("Columnas actualizadas"); };
+}
+
+// ---------- render: questions ----------
+function renderQuestions() {
+  const tags = [...new Set(app.questions.flatMap((q) => q.tags))].sort();
+  $("tagbar").innerHTML = tags.map((t) => {
+    const qs = app.questions.filter((q) => q.tags.includes(t)); const on = qs.every((q) => q.active !== false);
+    return `<span class="chip ${on ? "on" : ""}" data-tag="${esc(t)}">#${esc(t)} <span class="muted">${qs.length}</span></span>`;
+  }).join("");
+  $("qlist").innerHTML = app.questions.length ? app.questions.map((q, i) => qCard(q, i)).join("")
+    : '<p class="muted">Aún no hay preguntas. Genéralas con Opus o añádelas a mano.</p>';
+}
+function qCard(q, i) {
+  const p = problems(q);
+  let crit = "";
+  if (q.type === "choice") {
+    crit = `<label>Opciones (nombre que ve el modelo · descripción)</label>` +
+      q.options.map((o, j) => `<div class="opt"><input type="text" class="name" data-q="${i}" data-opt="${j}" data-k="name" value="${esc(o.name)}" placeholder="nombre_opcion">
+        <textarea data-q="${i}" data-opt="${j}" data-k="description" rows="1" placeholder="qué cubre esta opción">${esc(o.description)}</textarea>
+        <button class="ghost" data-act="delopt" data-q="${i}" data-opt="${j}" title="Quitar opción">✕</button></div>`).join("") +
+      `<button data-act="addopt" data-q="${i}">+ opción</button>`;
+  } else if (q.type === "score") {
+    crit = `<label>Niveles, de menor a mayor (cada uno una situación que se entienda sola)</label>` +
+      q.levels.map((l, j) => `<div class="lvl"><span class="n">${j}</span><textarea data-q="${i}" data-lvl="${j}" rows="1">${esc(l)}</textarea>
+        <button class="ghost" data-act="up" data-q="${i}" data-lvl="${j}" title="Subir">↑</button>
+        <button class="ghost" data-act="down" data-q="${i}" data-lvl="${j}" title="Bajar">↓</button>
+        <button class="ghost" data-act="dellvl" data-q="${i}" data-lvl="${j}" title="Quitar nivel">✕</button></div>`).join("") +
+      `<button data-act="addlvl" data-q="${i}">+ nivel</button>`;
+  } else {
+    crit = `<div class="grid2"><div><label>Qué significa sí (opcional)</label><textarea data-q="${i}" data-k="true_criterion">${esc(q.true_criterion)}</textarea></div>
+      <div><label>Qué significa no (opcional; una situación concreta, no "no X")</label><textarea data-q="${i}" data-k="false_criterion">${esc(q.false_criterion)}</textarea></div></div>`;
+  }
+  return `<div class="qcard ${q.active === false ? "off" : ""} ${p.length ? "bad" : ""}">
+    <div class="qhead">
+      <input type="checkbox" data-act="toggle" data-q="${i}" ${q.active !== false ? "checked" : ""} title="Incluir en exportación y ejecución">
+      <input type="text" class="qid" data-q="${i}" data-k="id" value="${esc(q.id)}">
+      <select data-q="${i}" data-k="type">${["noul", "choice", "score"].map((t) => `<option ${t === q.type ? "selected" : ""}>${t}</option>`).join("")}</select>
+      <span class="cols" style="margin:0">${q.tags.map((t, j) => `<span class="chip">#${esc(t)}<span class="x" data-act="deltag" data-q="${i}" data-tag="${j}">✕</span></span>`).join("")}
+        <span class="chip"><input type="text" data-act="newtag" data-q="${i}" placeholder="+ tag"></span></span>
+      <span class="spacer"></span>
+      <button class="ghost" data-act="mvup" data-q="${i}" title="Subir">↑</button><button class="ghost" data-act="mvdown" data-q="${i}" title="Bajar">↓</button>
+      <button class="ghost" data-act="dup" data-q="${i}" title="Duplicar">⧉</button>
+      <button class="ghost" data-act="del" data-q="${i}" title="Borrar pregunta">✕</button>
+    </div>
+    <label>Pregunta (instructions) — referencia campos así: <code>\`record.columna\`</code></label>
+    <textarea data-q="${i}" data-k="instructions">${esc(q.instructions)}</textarea>
+    ${crit}
+    ${q.why ? `<div class="why">${esc(q.why)}</div>` : ""}
+    ${p.length ? `<div class="err">${p.map(esc).join(" · ")}</div>` : ""}
+  </div>`;
+}
+
+// ---------- render: export ----------
+const EX_TABS = { json: "Preguntas (JSON)", request: "Petición completa", python: "Python", js: "JavaScript", curl: "curl" };
+function exportText(tab) {
+  const qs = jevQuestions(); const model = $("model").value;
+  const sampleRow = app.rows[app.sampleIdx[0] ?? 0];
+  const state = sampleRow ? stateFor(sampleRow) : { record: {} };
+  const qJson = JSON.stringify(qs, null, 2);
+  const ctx = app.context.trim();
+  if (tab === "json") return qJson;
+  if (tab === "request") return JSON.stringify({ model, state, questions: qs }, null, 2);
+  if (tab === "python") return `import json
+import os
+import urllib.request
+
+COLUMNS = ${JSON.stringify(app.selected)}
+CONTEXT = ${JSON.stringify(ctx || null).replace(/^null$/, "None")}
+QUESTIONS = json.loads(r"""
+${qJson}
+""")
+
+
+def state_for(row: dict) -> dict:
+    record = {c: row[c] for c in COLUMNS if row.get(c) not in (None, "")}
+    return {"context": CONTEXT, "record": record} if CONTEXT else {"record": record}
+
+
+def ask(row: dict, model: str = "${model}") -> dict:
+    """One Jev request for one row. Raises on failure: an error is never an answer."""
+    body = json.dumps({"model": model, "state": state_for(row), "questions": QUESTIONS}).encode()
+    req = urllib.request.Request(
+        "https://api.typesafe.ai/v1/systemone", data=body, method="POST",
+        headers={"Content-Type": "application/json",
+                 "Authorization": f"Bearer {os.environ['TYPESAFE_API_KEY']}"},
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        return json.load(resp)["answers"]
+
+
+if __name__ == "__main__":
+    answers = ask(${pyLiteral(sampleRow ? Object.fromEntries(app.selected.map((c) => [c, sampleRow[c] ?? null])) : {})})
+${activeQs().map((q) => `    print("${q.id}", ${q.type === "choice" ? `answers["${q.id}"]["choice"], answers["${q.id}"]["probabilities"]` : q.type === "score" ? `answers["${q.id}"]["score"]` : `answers["${q.id}"]["noul"]`})`).join("\n")}
+`;
+  if (tab === "js") return `const COLUMNS = ${JSON.stringify(app.selected)};
+const CONTEXT = ${JSON.stringify(ctx || null)};
+const QUESTIONS = ${qJson};
+
+function stateFor(row) {
+  const record = Object.fromEntries(COLUMNS.filter((c) => row[c] != null && row[c] !== "").map((c) => [c, row[c]]));
+  return CONTEXT ? { context: CONTEXT, record } : { record };
+}
+
+// Server-side only: keep TYPESAFE_API_KEY off the browser.
+export async function ask(row, model = "${model}") {
+  const res = await fetch("https://api.typesafe.ai/v1/systemone", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: \`Bearer \${process.env.TYPESAFE_API_KEY}\` },
+    body: JSON.stringify({ model, state: stateFor(row), questions: QUESTIONS }),
+  });
+  if (!res.ok) throw new Error(\`Jev \${res.status}: \${await res.text()}\`); // an error is never an answer
+  return (await res.json()).answers;
+}
+`;
+  if (tab === "curl") return `curl https://api.typesafe.ai/v1/systemone \\
+  -H "Authorization: Bearer $TYPESAFE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d @- <<'JSON'
+${JSON.stringify({ model, state, questions: qs }, null, 2)}
+JSON`;
+}
+function pyLiteral(obj) {
+  return JSON.stringify(obj).replace(/\bnull\b/g, "None").replace(/\btrue\b/g, "True").replace(/\bfalse\b/g, "False");
+}
+function renderExport() {
+  $("exTabs").innerHTML = Object.entries(EX_TABS).map(([k, v]) => `<button data-tab="${k}" class="${k === app.exTab ? "on" : ""}">${v}</button>`).join("");
+  $("exOut").textContent = exportText(app.exTab);
+}
+
+// ---------- run ----------
+let stopFlag = false;
+function rowsForRun() {
+  const s = $("scope").value;
+  if (s === "sample") return app.sampleIdx.slice();
+  if (s === "first") return [...app.rows.keys()].slice(0, Math.max(1, +$("firstN").value || 1));
+  return [...app.rows.keys()];
+}
+async function run() {
+  const bad = activeQs().filter((q) => problems(q).length);
+  if (!activeQs().length) return toast("No hay preguntas activas");
+  if (bad.length) return toast(`Corrige antes: ${bad.map((q) => q.id).join(", ")}`);
+  if (!app.rows.length) return toast("Carga un dataset primero");
+  const idx = rowsForRun(); const questions = jevQuestions(); const model = $("model").value;
+  const qMeta = activeQs().map((q) => ({ id: q.id, type: q.type, options: q.options.map((o) => o.name), levels: q.levels.slice() }));
+  app.runRows = idx; app.results = { qMeta, items: idx.map(() => null), model };
+  stopFlag = false; $("runBtn").disabled = true; $("stopBtn").disabled = false;
+  const t0 = performance.now(); let tokens = 0;
+  for (let b = 0; b < idx.length && !stopFlag; b += BATCH) {
+    const chunk = idx.slice(b, b + BATCH);
+    const states = chunk.map((i) => stateFor(app.rows[i]));
+    let res;
+    try {
+      const r = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model, states, questions }) });
+      res = await r.json();
+      if (!r.ok) throw new Error(res.error || r.status);
+    } catch (e) { res = { results: chunk.map(() => ({ error: String(e.message || e) })) }; }
+    res.results.forEach((x, k) => { app.results.items[b + k] = { ...x, state: states[k] }; tokens += x.input_tokens || 0; });
+    $("prog").style.width = `${Math.min(100, ((b + chunk.length) / idx.length) * 100)}%`;
+    const errs = app.results.items.filter((x) => x && x.error).length;
+    $("runInfo").textContent = `${Math.min(b + chunk.length, idx.length)}/${idx.length} filas · ${tokens.toLocaleString()} tokens · $${(tokens * 0.042 / 1e6).toFixed(5)}${errs ? ` · ${errs} errores` : ""} · ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+    renderResults(); refreshStatus();
+  }
+  $("runBtn").disabled = false; $("stopBtn").disabled = true;
+  $("dlCsv").disabled = $("dlJsonl").disabled = false;
+}
+function nClass(p) { return p >= 0.7 ? "yes" : p <= 0.3 ? "no" : "mid"; }
+function cellFor(meta, a) {
+  if (!a) return "—";
+  if (meta.type === "noul") return `<span class="${nClass(a.noul)}">${a.noul.toFixed(2)}</span>`;
+  if (meta.type === "choice") return `${esc(a.choice)} <span class="muted">${(a.probabilities?.[a.choice] ?? 0).toFixed(2)}</span>`;
+  if (meta.type === "score") return `${a.score.toFixed(2)}`;
+  return esc(JSON.stringify(a));
+}
+function renderResults() {
+  const R = app.results;
+  if (!R) { $("results").innerHTML = ""; $("summary").innerHTML = ""; return; }
+  const firstCol = app.selected[0];
+  $("results").innerHTML = `<table><tr><th>#</th>${firstCol ? `<th>${esc(firstCol)}</th>` : ""}${R.qMeta.map((m) => `<th>${esc(m.id)}</th>`).join("")}</tr>` +
+    R.items.map((it, k) => {
+      const i = app.runRows[k]; const row = app.rows[i];
+      if (!it) return `<tr><td class="muted">${i}</td><td colspan="${R.qMeta.length + 1}" class="muted">pendiente…</td></tr>`;
+      const pre = firstCol ? `<td class="clip">${esc(fmtCell(row[firstCol]))}</td>` : "";
+      if (it.error) return `<tr class="clickable" data-k="${k}"><td class="muted">${i}</td>${pre}<td colspan="${R.qMeta.length}" class="no">error: ${esc(it.error.slice(0, 200))}</td></tr>`;
+      return `<tr class="clickable" data-k="${k}"><td class="muted">${i}</td>${pre}${R.qMeta.map((m) => `<td>${cellFor(m, it.answers[m.id])}</td>`).join("")}</tr>`;
+    }).join("") + "</table>";
+  const done = R.items.filter((x) => x && !x.error);
+  $("summary").innerHTML = R.qMeta.map((m) => {
+    const ans = done.map((x) => x.answers[m.id]).filter(Boolean);
+    if (!ans.length) return "";
+    let body = "";
+    if (m.type === "noul") {
+      const y = ans.filter((a) => a.noul >= 0.7).length, n = ans.filter((a) => a.noul <= 0.3).length, mid = ans.length - y - n;
+      body = bars([["sí (≥0.7)", y], ["sin decidir", mid], ["no (≤0.3)", n]], ans.length);
+    } else if (m.type === "choice") {
+      body = bars(m.options.map((o) => [o, ans.filter((a) => a.choice === o).length]), ans.length);
+    } else if (m.type === "score") {
+      const mean = ans.reduce((s, a) => s + a.score, 0) / ans.length;
+      body = `<div class="muted">media ${mean.toFixed(2)} · nivel más probable:</div>` +
+        bars(m.levels.map((l, j) => [`${j} · ${l}`, ans.filter((a) => argmax(a.probabilities) === String(j)).length]), ans.length);
+    }
+    return `<div class="sumcard"><b>${esc(m.id)}</b> <span class="muted">${m.type} · ${ans.length} filas</span>${body}</div>`;
+  }).join("");
+}
+function argmax(p) { return Object.entries(p || {}).sort((a, b) => b[1] - a[1])[0]?.[0]; }
+function bars(pairs, total) {
+  return pairs.map(([label, n]) => `<div class="bar"><span title="${esc(label)}">${esc(label)}</span><div class="track"><div class="fill" style="width:${total ? (n / total) * 100 : 0}%"></div></div><span class="muted">${n}</span></div>`).join("");
+}
+function csvEscape(v) { const s = v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
+function download(name, text, type = "text/plain") {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportCsv() {
+  const R = app.results; const head = ["row", ...app.columns];
+  for (const m of R.qMeta) { head.push(m.id); if (m.type === "choice") head.push(`${m.id}__p`); }
+  head.push("error");
+  const lines = [head.map(csvEscape).join(",")];
+  R.items.forEach((it, k) => {
+    if (!it) return; const i = app.runRows[k]; const row = app.rows[i]; const out = [i, ...app.columns.map((c) => row[c])];
+    for (const m of R.qMeta) {
+      const a = it.answers?.[m.id];
+      if (m.type === "choice") out.push(a?.choice, a?.probabilities?.[a.choice]);
+      else if (m.type === "score") out.push(a?.score); else out.push(a?.noul);
+    }
+    out.push(it.error || ""); lines.push(out.map(csvEscape).join(","));
+  });
+  download("jev-results.csv", lines.join("\n"), "text/csv");
+}
+function exportJsonl() {
+  const R = app.results;
+  download("jev-results.jsonl", R.items.map((it, k) => it && JSON.stringify({ row: app.runRows[k], model: it.model || R.model, state: it.state, answers: it.answers, error: it.error, input_tokens: it.input_tokens })).filter(Boolean).join("\n"), "application/x-ndjson");
+}
+
+// ---------- status ----------
+async function refreshStatus() {
+  try {
+    const s = await (await fetch("/api/status")).json();
+    $("status").innerHTML = `${s.typesafe_key ? "" : '<span class="no">falta TYPESAFE_API_KEY</span> · '}${s.anthropic_key ? "" : '<span class="no">falta ANTHROPIC_API_KEY</span> · '}gasto: Jev $${s.spend.jev.toFixed(4)} / ${s.caps.jev} · Opus $${s.spend.opus.toFixed(3)} / ${s.caps.opus}`;
+  } catch (e) { $("status").innerHTML = '<span class="no">servidor no disponible</span>'; }
+}
+
+function renderAll() { renderData(); renderNotes(); renderQuestions(); renderExport(); renderResults(); }
+
+// ---------- events ----------
+$("file").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try { setRows(parseData(await f.text(), f.name)); toast(`${app.rows.length} filas cargadas`); } catch (err) { toast("No se pudo leer: " + err.message); }
+};
+$("pasteBtn").onclick = () => $("pasteDlg").showModal();
+$("exampleBtn").onclick = async () => {
+  try { setRows(parseData(await (await fetch("/api/example")).text())); toast(`${app.rows.length} filas de ejemplo`); } catch (err) { toast("No se pudo cargar el ejemplo"); }
+};
+$("pasteCancel").onclick = () => $("pasteDlg").close();
+$("pasteOk").onclick = () => { try { setRows(parseData($("pasteArea").value)); $("pasteDlg").close(); } catch (err) { toast("No se pudo leer: " + err.message); } };
+$("cols").onclick = (e) => {
+  const c = e.target.closest("[data-col]")?.dataset.col; if (c === undefined) return;
+  app.selected = app.selected.includes(c) ? app.selected.filter((x) => x !== c) : app.columns.filter((x) => x === c || app.selected.includes(x));
+  renderData(); renderExport(); save();
+};
+$("dropEmpty").onchange = (e) => { app.dropEmpty = e.target.checked; renderExport(); save(); };
+$("context").oninput = (e) => { app.context = e.target.value; renderExport(); save(); };
+$("sampleSize").onchange = (e) => { app.sampleSize = Math.max(1, +e.target.value || 15); resample(); renderData(); renderExport(); save(); };
+$("resample").onclick = () => { resample(); renderData(); renderExport(); save(); };
+$("goal").oninput = (e) => { app.goal = e.target.value; save(); };
+$("nq").onchange = (e) => { app.nq = +e.target.value || 8; save(); };
+
+$("genBtn").onclick = async () => {
+  if (!app.rows.length) return toast("Carga un dataset primero");
+  if (!app.goal.trim()) return toast("Escribe el objetivo");
+  $("genBtn").disabled = true; $("genInfo").textContent = "Opus está pensando… (suele tardar 30–90 s)";
+  try {
+    const sample = app.sampleIdx.map((i) => Object.fromEntries(app.selected.map((c) => [c, app.rows[i][c]])));
+    const r = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ goal: app.goal, context: app.context, columns: app.selected, sample, n_questions: app.nq }) });
+    const out = await r.json(); if (!r.ok) throw new Error(out.error);
+    const qs = out.questions.map(normalizeQ);
+    if ($("replaceQs").checked) app.questions = qs;
+    else { for (const q of qs) { while (app.questions.some((o) => o.id === q.id)) q.id += "_2"; app.questions.push(q); } }
+    app.notes = { decision_sketch: out.decision_sketch, code_notes: out.code_notes, state_columns: out.state_columns };
+    $("genInfo").textContent = `${qs.length} preguntas · ${out.usage.input_tokens + out.usage.output_tokens} tokens · $${out.cost_usd.toFixed(3)} · ${out.seconds.toFixed(0)} s`;
+    renderAll(); save(); location.hash = "s-q";
+  } catch (e) { $("genInfo").innerHTML = `<span class="no">${esc(e.message)}</span>`; }
+  $("genBtn").disabled = false; refreshStatus();
+};
+
+$("addNoul").onclick = () => { app.questions.push(blankQ("noul")); renderQuestions(); renderExport(); save(); };
+$("addChoice").onclick = () => { app.questions.push(blankQ("choice")); renderQuestions(); renderExport(); save(); };
+$("addScore").onclick = () => { app.questions.push(blankQ("score")); renderQuestions(); renderExport(); save(); };
+$("saveProj").onclick = () => download("jev-project.json", JSON.stringify({ goal: app.goal, context: app.context, selected: app.selected, dropEmpty: app.dropEmpty, notes: app.notes, questions: app.questions }, null, 2), "application/json");
+$("loadProj").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const p = JSON.parse(await f.text());
+    app.questions = (p.questions || []).map(normalizeQ); app.goal = p.goal || ""; app.context = p.context || ""; app.notes = p.notes || null;
+    if (p.selected) app.selected = app.columns.length ? app.columns.filter((c) => p.selected.includes(c)) : p.selected;
+    if (p.dropEmpty !== undefined) app.dropEmpty = p.dropEmpty;
+    $("goal").value = app.goal; renderAll(); save(); toast("Proyecto cargado");
+  } catch (err) { toast("Proyecto no válido"); }
+};
+$("tagbar").onclick = (e) => {
+  const t = e.target.closest("[data-tag]")?.dataset.tag; if (t === undefined) return;
+  const qs = app.questions.filter((q) => q.tags.includes(t)); const on = qs.every((q) => q.active !== false);
+  qs.forEach((q) => (q.active = !on)); renderQuestions(); renderExport(); save();
+};
+
+// field edits: update model without re-rendering (keeps focus); re-render on change for validation
+const ql = $("qlist");
+ql.oninput = (e) => {
+  const d = e.target.dataset; if (d.q === undefined || d.act) return; const q = app.questions[+d.q];
+  if (d.opt !== undefined) q.options[+d.opt][d.k] = e.target.value;
+  else if (d.lvl !== undefined) q.levels[+d.lvl] = e.target.value;
+  else if (d.k && d.k !== "type") q[d.k] = e.target.value;
+  renderExport(); save();
+};
+ql.onchange = (e) => {
+  const d = e.target.dataset; if (d.q === undefined) return; const q = app.questions[+d.q];
+  if (d.act === "toggle") q.active = e.target.checked;
+  else if (d.k === "type") {
+    q.type = e.target.value;
+    if (q.type === "choice" && q.options.length < 2) q.options = [{ name: "", description: "" }, { name: "", description: "" }];
+    if (q.type === "score" && q.levels.length < 2) q.levels = ["", "", ""];
+  } else if (d.act === "newtag") {
+    const t = e.target.value.trim().replace(/^#/, ""); if (t && !q.tags.includes(t)) q.tags.push(t);
+  }
+  renderQuestions(); renderExport(); save();
+};
+ql.onkeydown = (e) => { if (e.key === "Enter" && e.target.dataset.act === "newtag") { e.preventDefault(); e.target.blur(); } };
+ql.onclick = (e) => {
+  const el = e.target.closest("[data-act]"); if (!el || el.tagName === "INPUT") return;
+  const d = el.dataset; const i = +d.q; const q = app.questions[i]; const Q = app.questions;
+  const swap = (arr, a, b) => { if (b < 0 || b >= arr.length) return; [arr[a], arr[b]] = [arr[b], arr[a]]; };
+  switch (d.act) {
+    case "del": if (!confirm(`¿Borrar la pregunta ${q.id}?`)) return; Q.splice(i, 1); break;
+    case "dup": { const c = JSON.parse(JSON.stringify(q)); c.id += "_copia"; Q.splice(i + 1, 0, c); break; }
+    case "mvup": swap(Q, i, i - 1); break;
+    case "mvdown": swap(Q, i, i + 1); break;
+    case "addopt": q.options.push({ name: "", description: "" }); break;
+    case "delopt": q.options.splice(+d.opt, 1); break;
+    case "addlvl": q.levels.push(""); break;
+    case "dellvl": q.levels.splice(+d.lvl, 1); break;
+    case "up": swap(q.levels, +d.lvl, +d.lvl - 1); break;
+    case "down": swap(q.levels, +d.lvl, +d.lvl + 1); break;
+    case "deltag": q.tags.splice(+d.tag, 1); break;
+    default: return;
+  }
+  renderQuestions(); renderExport(); save();
+};
+
+$("exTabs").onclick = (e) => { const t = e.target.dataset.tab; if (!t) return; app.exTab = t; renderExport(); save(); };
+$("model").onchange = renderExport;
+$("copyEx").onclick = async () => { try { await navigator.clipboard.writeText($("exOut").textContent); toast("Copiado"); } catch (e) { toast("No se pudo copiar"); } };
+$("dlEx").onclick = () => download({ json: "jev-questions.json", request: "jev-request.json", python: "jev_questions.py", js: "jevQuestions.mjs", curl: "jev-request.sh" }[app.exTab], $("exOut").textContent);
+
+$("runBtn").onclick = run;
+$("stopBtn").onclick = () => { stopFlag = true; $("stopBtn").disabled = true; };
+$("dlCsv").onclick = exportCsv; $("dlJsonl").onclick = exportJsonl;
+let openRow = null;
+$("results").onclick = (e) => {
+  const k = e.target.closest("tr[data-k]")?.dataset.k; if (k === undefined) return;
+  const it = app.results.items[+k]; openRow = { model: it.model || app.results.model, state: it.state, questions: jevQuestions() };
+  $("rowTitle").textContent = `Fila ${app.runRows[+k]}${it.model ? " · " + it.model : ""}`;
+  $("rowState").textContent = JSON.stringify(it.state, null, 2);
+  $("rowAnswers").textContent = JSON.stringify(it.error ? { error: it.error } : it.answers, null, 2);
+  $("rowDlg").showModal();
+};
+$("rowClose").onclick = () => $("rowDlg").close();
+$("rowCopy").onclick = async () => { try { await navigator.clipboard.writeText(JSON.stringify(openRow, null, 2)); toast("Petición copiada"); } catch (e) { toast("No se pudo copiar"); } };
+
+load(); $("goal").value = app.goal; $("nq").value = app.nq;
+if (app.rows.length && !app.sampleIdx.length) resample();
+renderAll(); refreshStatus();
+</script>
+</body>
+</html>
