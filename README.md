@@ -36,8 +36,16 @@ cp .env.example .env   # rellena TYPESAFE_API_KEY y ANTHROPIC_API_KEY
 npm start              # compila la página y arranca en http://127.0.0.1:8791
 ```
 
-Pulsa **Cargar ejemplo** para probar con `examples/support_tickets.csv` (30 tickets de soporte
-ficticios).
+Elige un ejemplo en el desplegable y pulsa **Cargar ejemplo**:
+
+- `examples/support_tickets.csv`: 30 tickets de soporte de una app de facturación.
+- `examples/sales_calls.json`: 24 llamadas de venta de Parlora como las exportaría Fathom
+  (título, asistentes, empresa y transcripción por turnos), en español e inglés. Incluye columnas
+  `label_stage`, `label_outcome` y `label_main_objection` con lo que pasó en cada llamada, para
+  comparar con las respuestas de Jev.
+
+Los dos son ficticios: empresas, personas, precios y conversaciones inventados. Las columnas que
+se llaman `label` o empiezan por `label_` se cargan desmarcadas, para que Jev no vea la respuesta.
 
 Otros comandos:
 

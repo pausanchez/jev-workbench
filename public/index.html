@@ -126,12 +126,13 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
     </ul>
     <p><b>Codificación UTF-8</b> (en Excel: "CSV UTF-8"); con otra, los acentos pueden salir mal.
       <b>No se aceptan</b> <code>.xlsx</code> ni parquet: guárdalos antes como CSV.
-      No hace falta limpiar el fichero: las columnas se eligen abajo (desmarca IDs y la columna de la etiqueta si el dataset está etiquetado).
+      No hace falta limpiar el fichero: las columnas se eligen abajo (desmarca IDs y la columna de la etiqueta si el dataset está etiquetado). Las columnas <code>label</code> o <code>label_*</code> empiezan desmarcadas.
       Sin límite de filas; a partir de unos ~5 MB la página no puede recordar las filas al recargar (las preguntas sí).</p>
   </details>
   <div class="row">
     <input type="file" id="file" accept=".csv,.tsv,.json,.jsonl,.txt">
     <button id="pasteBtn">Pegar datos…</button>
+    <select id="exampleSel" style="width:auto" title="Datasets de ejemplo"></select>
     <button id="exampleBtn">Cargar ejemplo</button>
     <span id="dataInfo" class="muted"></span>
   </div>

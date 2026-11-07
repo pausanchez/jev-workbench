@@ -89,7 +89,8 @@ function setRows(values: unknown[]): void {
   if (!rows.length) { toast("No se encontraron filas. " + FORMAT_HELP, 5000); return; }
   const cols: string[] = [];
   for (const r of rows.slice(0, 500)) for (const k of Object.keys(r)) if (!cols.includes(k)) cols.push(k);
-  app.rows = rows; app.columns = cols; app.selected = cols.slice(); app.results = null;
+  // Ground-truth columns stay out of the state by default, so Jev never sees the answer.
+  app.rows = rows; app.columns = cols; app.selected = cols.filter((c) => !/^label(_|$)/i.test(c)); app.results = null;
   resample(); save(); renderAll();
 }
 function readError(err: unknown): void {
@@ -395,9 +396,23 @@ $("file").onchange = async (e) => {
   input.value = "";
 };
 $("pasteBtn").onclick = () => $<HTMLDialogElement>("pasteDlg").showModal();
+const EXAMPLE_NAMES: Record<string, string> = {
+  "support_tickets.csv": "Tickets de soporte (30)",
+  "sales_calls.json": "Llamadas de venta Parlora (24)",
+};
+async function loadExampleList(): Promise<void> {
+  try {
+    const names = await (await fetch("/api/examples")).json() as string[];
+    $("exampleSel").innerHTML = names.map((n) => `<option value="${esc(n)}">${esc(EXAMPLE_NAMES[n] ?? n)}</option>`).join("");
+  } catch { /* the button reports the failure */ }
+}
 $("exampleBtn").onclick = async () => {
-  try { setRows(parseData(await (await fetch("/api/example")).text())); toast(`${app.rows.length} filas de ejemplo`); }
-  catch { toast("No se pudo cargar el ejemplo"); }
+  const name = $<HTMLSelectElement>("exampleSel").value;
+  try {
+    const r = await fetch(`/api/example?name=${encodeURIComponent(name)}`);
+    if (!r.ok) throw new Error(String(r.status));
+    setRows(parseData(await r.text(), name)); toast(`${app.rows.length} filas de ejemplo`);
+  } catch { toast("No se pudo cargar el ejemplo"); }
 };
 $("pasteCancel").onclick = () => $<HTMLDialogElement>("pasteDlg").close();
 $("pasteOk").onclick = () => {
@@ -555,7 +570,7 @@ $("rowCopy").onclick = async () => {
 load();
 $("goal").value = app.goal; $("nq").value = String(app.nq); updateGenBtn();
 if (app.rows.length && !app.sampleIdx.length) resample();
-renderAll(); void refreshStatus();
+renderAll(); void refreshStatus(); void loadExampleList();
 
 // Exposed for debugging from the browser console.
 Object.assign(window, { jevWorkbench: { app, toJev } });

@@ -8,7 +8,7 @@
 // stops calling a model once its spend cap for the life of the process is reached.
 
 import { existsSync } from "node:fs";
-import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { appendFile, mkdir, readdir, readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
@@ -34,7 +34,7 @@ const MAX_BODY_BYTES = 30 * 1024 * 1024;
 const WORKERS = 8;
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-  ".map": "application/json", ".css": "text/css; charset=utf-8", ".csv": "text/csv; charset=utf-8",
+  ".map": "application/json", ".json": "application/json; charset=utf-8", ".css": "text/css; charset=utf-8", ".csv": "text/csv; charset=utf-8",
 };
 
 const spend: Spend = { jev: 0, opus: 0 };
@@ -101,6 +101,10 @@ async function serveFile(res: ServerResponse, path: string): Promise<void> {
   }
 }
 
+async function listExamples(): Promise<string[]> {
+  return (await readdir(join(ROOT, "examples"))).filter((f) => /\.(csv|json|jsonl)$/.test(f)).sort();
+}
+
 async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const path = new URL(req.url ?? "/", "http://localhost").pathname;
 
@@ -112,7 +116,12 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       };
       return sendJson(res, 200, status);
     }
-    if (path === "/api/example") return serveFile(res, join(ROOT, "examples", "support_tickets.csv"));
+    if (path === "/api/examples") return sendJson(res, 200, await listExamples());
+    if (path === "/api/example") {
+      const name = new URL(req.url ?? "/", "http://localhost").searchParams.get("name") ?? "";
+      if (!(await listExamples()).includes(name)) return sendJson(res, 404, { error: "unknown example" });
+      return serveFile(res, join(ROOT, "examples", name));
+    }
     if (path === "/favicon.ico") { res.writeHead(204).end(); return; }
     const file = normalize(join(PUBLIC, path === "/" ? "index.html" : path));
     if (!file.startsWith(PUBLIC)) { res.writeHead(403).end(); return; }
