@@ -11,7 +11,8 @@
     "build": "esbuild src/client/app.ts --bundle --format=esm --target=es2022 --sourcemap --outfile=public/app.js",
     "typecheck": "tsc --noEmit",
     "start": "npm run build && node src/server/server.ts",
-    "dev": "npm run build -- --watch=forever & node --watch src/server/server.ts"
+    "dev": "npm run build -- --watch=forever & node --watch src/server/server.ts",
+    "screenshots": "node scripts/screenshots.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "esbuild": "^0.28.2",
+    "puppeteer-core": "^24.43.1",
     "typescript": "^7.0.2"
   },
   "allowScripts": {

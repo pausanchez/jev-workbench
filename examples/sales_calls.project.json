@@ -1,0 +1,206 @@
+{
+  "goal": "",
+  "context": "Llamadas de venta de Parlora (plataforma no-code de chatbots para web y WhatsApp), grabadas con Fathom. Los asistentes marcados como (Parlora) son nuestros comerciales; el resto son clientes potenciales.",
+  "selected": [
+    "title",
+    "internal_attendees",
+    "external_attendees",
+    "company",
+    "transcript"
+  ],
+  "dropEmpty": true,
+  "notes": {
+    "decision_sketch": "Etapa CRM: si estado_oportunidad_encaja >=0.7, usar estado_oportunidad (compra_confirmada→Ganada; perdida_ante_competidor o descartada_sin_competidor→Perdida; pospuesta→Nurturing con fecha de reactivación; avanzando→sin cambio de etapa). Si encaja <=0.7, no cambiar la etapa y marcar 'revisar'. Motivo de pérdida: si Perdida y menciona_competidor >=0.7 registrar competidor; usar objecion_principal solo si objecion_principal_encaja >=0.7. Riesgo: cliente_actual_considera_alternativas >=0.7 → alerta inmediata a CSM y manager; 0.3-0.7 → revisión manual. Seguimiento: si avanzando y proximo_paso_acordado <=0.3 → marcar 'estancada' y crear tarea en 2 días; entre 0.3 y 0.7 → tarea genérica en 5 días. Prioridad: interes_cliente en los dos niveles más altos y avanzando → prioridad alta; nivel medio → media; resto → baja. Objeción seguridad_y_cumplimiento o integracion_tecnica → asignar Solutions Engineer.",
+    "code_notes": [
+      "La empresa y los asistentes vienen en `record.company`, `record.internal_attendees` y `record.external_attendees`; asignar el comercial responsable desde `internal_attendees` por código, no con Jev.",
+      "Detectar llamadas de clientes actuales (QBR, expansión) por palabras clave en `record.title` o por cruce con la base de clientes del CRM.",
+      "Extraer nombres de competidores con lista fija (InstaFlow, HelpNest, CodeBot Studio, etc.) mediante búsqueda de texto para normalizarlos.",
+      "La duración de la llamada y el idioma pueden calcularse de las marcas de tiempo y el texto sin usar Jev."
+    ],
+    "state_columns": [
+      "title",
+      "external_attendees",
+      "transcript"
+    ],
+    "goal_used": "Actualizar la etapa de cada oportunidad en el CRM tras la llamada, registrar el motivo de pérdida u objeción y priorizar el seguimiento comercial.",
+    "suggested_goals": [
+      "Detectar clientes actuales en riesgo de abandono a partir de quejas sobre soporte o cambios de interlocutor.",
+      "Clasificar el caso de uso principal de cada cliente (atención al cliente, captación de leads, reservas, recordatorios) para orientar plantillas y demos.",
+      "Identificar oportunidades que requieren un Solutions Engineer por dudas técnicas o de seguridad.",
+      "Evaluar la calidad de la llamada del comercial: si hizo preguntas de discovery y cerró con un próximo paso.",
+      "Recopilar peticiones de funcionalidades que faltan en el producto para enviarlas al equipo de producto."
+    ],
+    "inferred": true
+  },
+  "questions": [
+    {
+      "id": "estado_oportunidad",
+      "type": "choice",
+      "instructions": "¿En qué situación queda la oportunidad comercial al final de la llamada en `record.transcript`?",
+      "options": [
+        {
+          "name": "compra_confirmada",
+          "description": "El cliente confirma que contrata, firma o amplía: acepta el contrato, activa el plan o mete la tarjeta. Si solo dice que le gusta pero aún debe consultarlo, no es esta opción."
+        },
+        {
+          "name": "perdida_ante_competidor",
+          "description": "El cliente dice que ha elegido otra herramienta (InstaFlow, CodeBot Studio, HelpNest u otra) o que lo construirá por su cuenta."
+        },
+        {
+          "name": "descartada_sin_competidor",
+          "description": "El cliente dice que no seguirá adelante sin haber elegido otra herramienta, por ejemplo porque no lo necesita o no le compensa."
+        },
+        {
+          "name": "pospuesta",
+          "description": "El cliente quiere seguir más adelante pero hoy no puede: presupuesto del año siguiente, compras congeladas, pide no ser contactado hasta una fecha. Se diferencia de descartada en que el cliente deja la puerta abierta con un horizonte temporal."
+        },
+        {
+          "name": "avanzando",
+          "description": "La evaluación sigue activa: demo, discovery, revisión técnica, de seguridad o legal, propuesta enviada, a la espera de una respuesta próxima."
+        }
+      ],
+      "levels": [],
+      "true_criterion": "",
+      "false_criterion": "",
+      "tags": [
+        "pipeline"
+      ],
+      "why": "Determina a qué etapa del CRM se mueve la oportunidad.",
+      "active": true
+    },
+    {
+      "id": "estado_oportunidad_encaja",
+      "type": "noul",
+      "instructions": "¿Deja `record.transcript` claro en qué situación queda la oportunidad comercial al final de la llamada?",
+      "options": [],
+      "levels": [],
+      "true_criterion": "La conversación muestra si el cliente compra, descarta, pospone o sigue evaluando.",
+      "false_criterion": "La llamada se corta o se reprograma sin hablar del proyecto, o la transcripción termina antes de saber cómo queda.",
+      "tags": [
+        "pipeline"
+      ],
+      "why": "Indica si se puede usar la etapa elegida o hay que dejar la oportunidad sin cambios.",
+      "active": true
+    },
+    {
+      "id": "menciona_competidor",
+      "type": "noul",
+      "instructions": "¿Menciona el cliente potencial en `record.transcript` otra herramienta de chatbots o mensajería que usa o está evaluando?",
+      "options": [],
+      "levels": [],
+      "true_criterion": "El cliente nombra una herramienta alternativa, como InstaFlow, HelpNest o CodeBot Studio, que usa, compara o ha elegido.",
+      "false_criterion": "El cliente solo habla de Parlora y de sus propios sistemas, como Shopify, HubSpot o Salesforce.",
+      "tags": [
+        "competencia"
+      ],
+      "why": "Alimenta el informe de competencia y activa el envío de material comparativo.",
+      "active": true
+    },
+    {
+      "id": "objecion_principal",
+      "type": "choice",
+      "instructions": "¿Cuál es la principal objeción o freno que plantea el cliente en `record.transcript`?",
+      "options": [
+        {
+          "name": "precio",
+          "description": "El cliente dice que Parlora es caro, pide descuento o compara con una oferta más barata."
+        },
+        {
+          "name": "presupuesto_o_momento",
+          "description": "El cliente no tiene presupuesto ahora o hay congelación de compras, aunque el precio en sí no le parezca alto."
+        },
+        {
+          "name": "seguridad_y_cumplimiento",
+          "description": "Dudas sobre dónde se guardan los datos, cifrado, SSO, auditoría, regulación o datos sensibles."
+        },
+        {
+          "name": "integracion_tecnica",
+          "description": "Dudas sobre conectar con CRM, motores de reserva, APIs o sobre la falta de recursos técnicos para montarlo."
+        },
+        {
+          "name": "funcionalidad_o_canal",
+          "description": "Falta una función que necesita (traducción automática, foco en Instagram, control en código) o el canal no encaja."
+        },
+        {
+          "name": "soporte_y_servicio",
+          "description": "Quejas sobre tiempos de respuesta de soporte o incidencias con el servicio actual."
+        },
+        {
+          "name": "terminos_contractuales",
+          "description": "Negociación de cláusulas: límite de responsabilidad, rescisión, plazos de preaviso."
+        }
+      ],
+      "levels": [],
+      "true_criterion": "",
+      "false_criterion": "",
+      "tags": [
+        "objeciones"
+      ],
+      "why": "Decide qué recurso o especialista asignar al seguimiento.",
+      "active": true
+    },
+    {
+      "id": "objecion_principal_encaja",
+      "type": "noul",
+      "instructions": "¿Plantea el cliente en `record.transcript` alguna objeción o freno para avanzar con Parlora?",
+      "options": [],
+      "levels": [],
+      "true_criterion": "El cliente expresa una duda, queja o condición que frena la compra.",
+      "false_criterion": "El cliente no pone pegas: confirma la compra sin reservas o la llamada no llega a tratar el proyecto.",
+      "tags": [
+        "objeciones"
+      ],
+      "why": "Indica si se debe leer la objeción elegida.",
+      "active": true
+    },
+    {
+      "id": "cliente_actual_considera_alternativas",
+      "type": "noul",
+      "instructions": "¿Dice un cliente que ya usa Parlora en `record.transcript` que su empresa está pensando en buscar alternativas o dejar la herramienta?",
+      "options": [],
+      "levels": [],
+      "true_criterion": "Un cliente actual menciona que se plantean cambiar de proveedor, mirar alternativas o cancelar.",
+      "false_criterion": "El interlocutor aún no es cliente, o es cliente y no menciona cambiar de proveedor.",
+      "tags": [
+        "riesgo",
+        "retencion"
+      ],
+      "why": "Activa una alerta de riesgo de abandono para Customer Success.",
+      "active": true
+    },
+    {
+      "id": "proximo_paso_acordado",
+      "type": "noul",
+      "instructions": "¿Acaba la llamada en `record.transcript` con un próximo paso concreto acordado por ambas partes?",
+      "options": [],
+      "levels": [],
+      "true_criterion": "Se acuerda una acción específica: una reunión con fecha, enviar un documento, presentar a otra persona o responder un día concreto.",
+      "false_criterion": "La llamada termina con un vago 'ya te diré', con el cliente pidiendo no ser contactado o sin acción definida.",
+      "tags": [
+        "seguimiento"
+      ],
+      "why": "Decide si crear una tarea de seguimiento o marcar la oportunidad como estancada.",
+      "active": true
+    },
+    {
+      "id": "interes_cliente",
+      "type": "score",
+      "instructions": "¿Qué nivel de interés en Parlora muestra el cliente potencial en `record.transcript`?",
+      "options": [],
+      "levels": [
+        "El cliente rechaza Parlora o dice que no lo necesita.",
+        "El cliente se muestra frío o distraído y no habla de su caso de uso.",
+        "El cliente describe su problema y hace preguntas, pero sin compromiso.",
+        "El cliente dice que la solución le encaja y quiere avanzar pronto.",
+        "El cliente confirma la compra o resuelve los últimos detalles del contrato."
+      ],
+      "true_criterion": "",
+      "false_criterion": "",
+      "tags": [
+        "priorizacion"
+      ],
+      "why": "Ordena la prioridad de seguimiento entre oportunidades activas.",
+      "active": true
+    }
+  ]
+}

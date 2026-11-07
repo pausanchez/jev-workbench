@@ -427,8 +427,8 @@ $("file").onchange = async (e) => {
 };
 $("pasteBtn").onclick = () => $<HTMLDialogElement>("pasteDlg").showModal();
 const EXAMPLE_NAMES: Record<string, string> = {
-  "support_tickets.csv": "Tickets de soporte (30)",
-  "sales_calls.json": "Llamadas de venta Parlora (24)",
+  "support_tickets.csv": "Tickets de soporte · ficticios (30)",
+  "sales_calls.json": "Llamadas de venta · Parlora, empresa ficticia (24)",
 };
 async function loadExampleList(): Promise<void> {
   try {

@@ -1,10 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "strict": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
@@ -12,5 +18,8 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "scripts"
+  ]
 }

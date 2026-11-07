@@ -6,6 +6,8 @@ reseñas, formularios… Cargas un fichero, una IA (Claude Opus) te propone las 
 a tu gusto y ves cómo las responde Jev en cada fila. Cuando te convencen, las copias para pasárselas
 al equipo de desarrollo.
 
+![Resultados de Jev sobre 24 llamadas de venta](docs/screenshots/5-ejecutar.png)
+
 Está pensada para Product Managers y perfiles no técnicos. Se instala y se arranca en tu ordenador;
 lo más cómodo es pedírselo a [Claude Code](#instalarlo-con-claude-code-recomendado).
 
@@ -89,6 +91,8 @@ La página tiene cinco pasos, de arriba abajo.
 
 ### 1 · Dataset: carga tus datos
 
+![Paso 1: dataset cargado, columnas elegidas y contexto](docs/screenshots/1-dataset.png)
+
 - **Sube un fichero** CSV (la exportación normal de Excel o Google Sheets, con una fila de
   títulos), JSON o JSONL. Si tienes un Excel, guárdalo antes como "CSV UTF-8".
 - O pulsa **Cargar ejemplo** para probar con los datos ficticios incluidos.
@@ -102,6 +106,8 @@ La página tiene cinco pasos, de arriba abajo.
 
 ### 2 · Generar: deja que Opus proponga las preguntas
 
+![Paso 2: objetivo que propone Opus, otros objetivos y boceto de la lógica](docs/screenshots/2-generar.png)
+
 - Escribe el **objetivo**: qué quieres decidir con estos datos. Por ejemplo: "Detectar qué deals
   están en riesgo y por qué".
 - ¿No lo tienes claro? **Déjalo vacío.** Opus revisará la muestra, propondrá el objetivo que vea
@@ -112,6 +118,8 @@ La página tiene cinco pasos, de arriba abajo.
   - las **columnas recomendadas** (con un botón para aplicarlas).
 
 ### 3 · Preguntas: revísalas y ajústalas
+
+![Paso 3: editor de preguntas con opciones, criterios y tags](docs/screenshots/3-preguntas.png)
 
 Todo se puede editar: el texto de la pregunta, las opciones de una Choice, los niveles de una
 Score, qué significa "sí" y "no" en una Noul, y las etiquetas (tags).
@@ -125,10 +133,14 @@ Score, qué significa "sí" y "no" en una Noul, y las etiquetas (tags).
 
 ### 4 · Exportar: llévatelo a tu equipo
 
+![Paso 4: las preguntas exportadas como código TypeScript](docs/screenshots/4-exportar.png)
+
 Copia las preguntas activas en el formato que prefiera desarrollo: JSON, la petición completa,
 TypeScript, Python o curl. Todos funcionan tal cual.
 
 ### 5 · Ejecutar: mira cómo responde Jev
+
+![Paso 5: resumen por pregunta y tabla de resultados](docs/screenshots/5-ejecutar.png)
 
 - Elige qué filas probar (la muestra, las primeras N o todas) y pulsa **Ejecutar**. Jev tarda
   menos de un segundo por tanda.
@@ -139,6 +151,8 @@ TypeScript, Python o curl. Todos funcionan tal cual.
   de en medio significa que **no está claro** (normalmente porque el texto no lo dice).
 - **Descarga** los resultados en CSV para abrirlos en Excel o Google Sheets.
 
+![Detalle de una fila: lo que recibió Jev y lo que contestó](docs/screenshots/6-detalle-fila.png)
+
 ---
 
 ## Ejemplos incluidos
@@ -146,9 +160,14 @@ TypeScript, Python o curl. Todos funcionan tal cual.
 Ambos son **inventados**: empresas, personas, precios y conversaciones.
 
 - **Tickets de soporte (30)**: mensajes de clientes de una app de facturación.
-- **Llamadas de venta Parlora (24)**: transcripciones como las que exportaría Fathom, en español e
-  inglés: demos, negociaciones de precio, deals perdidos contra la competencia, un cliente
-  descontento, una llamada cancelada…
+- **Llamadas de venta (24)**: llamadas de los comerciales de **Parlora**, una plataforma de chatbots
+  inventada, como las exportaría un grabador de reuniones tipo Fathom, en español e inglés: demos,
+  negociaciones de precio, deals perdidos contra la competencia, un cliente descontento, una
+  llamada cancelada… Los competidores que aparecen también son inventados.
+
+Para ver el resultado sin esperar a Opus, carga las llamadas y después, en el paso 3, pulsa
+**Cargar proyecto** y elige `examples/sales_calls.project.json`: son las preguntas que aparecen en
+las capturas.
 
 Las llamadas traen tres columnas con la respuesta correcta (`label_stage`, `label_outcome`,
 `label_main_objection`) para que compares con lo que dice Jev. Se cargan desmarcadas a propósito:
@@ -213,6 +232,7 @@ cp .env.example .env   # TYPESAFE_API_KEY y ANTHROPIC_API_KEY
 npm start              # compila la página y arranca en http://127.0.0.1:8791
 npm run dev            # recompila y reinicia al guardar
 npm run typecheck      # tsc --noEmit sobre servidor y cliente
+npm run screenshots    # rehace las capturas de docs/screenshots (con la herramienta arrancada)
 ```
 
 Variables opcionales en `.env`: `PORT`, `JEV_SPEND_CAP_USD`, `OPUS_SPEND_CAP_USD`.

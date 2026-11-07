@@ -102,7 +102,8 @@ async function serveFile(res: ServerResponse, path: string): Promise<void> {
 }
 
 async function listExamples(): Promise<string[]> {
-  return (await readdir(join(ROOT, "examples"))).filter((f) => /\.(csv|json|jsonl)$/.test(f)).sort();
+  // Saved projects (*.project.json) sit next to their dataset but are not datasets.
+  return (await readdir(join(ROOT, "examples"))).filter((f) => /\.(csv|json|jsonl)$/.test(f) && !f.endsWith(".project.json")).sort();
 }
 
 async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
