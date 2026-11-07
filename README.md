@@ -67,6 +67,10 @@ npm run typecheck   # tsc --noEmit sobre servidor y cliente
   repetirla. `runs/` está en `.gitignore`.
 - Una llamada fallida se muestra como error, nunca como respuesta.
 - Umbrales de lectura en la UI para Noul: ≥ 0,7 sí, ≤ 0,3 no, en medio sin decidir.
+- Una Choice siempre elige una opción, aunque no encaje ninguna. En vez de una opción "otro", cada
+  Choice lleva una Noul compañera `<id>_encaja` que pregunta si alguna opción encaja (Opus la
+  añade sola; en el editor hay un botón para crearla). Cuando la compañera dice que no (≤ 0,3), la
+  tabla y el resumen muestran "ninguna encaja" en vez de la opción elegida.
 - El estado de la página (dataset, preguntas, objetivo) se guarda en el `localStorage` del navegador.
   Para conservarlo de verdad, usa **Guardar proyecto**.
 - Solo texto por ahora: no envía imágenes ni preguntas Box.

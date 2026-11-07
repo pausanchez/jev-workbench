@@ -110,6 +110,19 @@ function stateFor(row: Row): JsonValue {
   for (const c of app.selected) if (!(app.dropEmpty && isEmpty(row[c]))) record[c] = row[c] ?? null;
   return app.context.trim() ? { context: app.context.trim(), record } : { record };
 }
+// A Choice always picks an option, even when none fits. Its companion Noul says whether any does.
+const companionId = (choiceId: string): string => `${choiceId}_encaja`;
+function companionFor(q: DraftQuestion): DraftQuestion {
+  const names = q.options.map((o) => o.name).filter(Boolean);
+  return {
+    id: companionId(q.id), type: "noul",
+    instructions: `Para la pregunta "${q.instructions.trim()}", ¿alguna de estas opciones describe bien el caso: ${names.join(", ")}?`,
+    options: [], levels: [],
+    true_criterion: "Al menos una de las opciones describe bien el caso.",
+    false_criterion: "Ninguna de las opciones describe el caso; haría falta otra distinta.",
+    tags: q.tags.slice(), why: `Compañera de ${q.id}: lee ${q.id} solo cuando esta dice que sí.`, active: true,
+  };
+}
 const activeQs = (): DraftQuestion[] => app.questions.filter((q) => q.active !== false);
 
 function problems(q: DraftQuestion): string[] {
@@ -200,7 +213,11 @@ function qCard(q: DraftQuestion, i: number): string {
       q.options.map((o, j) => `<div class="opt"><input type="text" class="name" data-q="${i}" data-opt="${j}" data-k="name" value="${esc(o.name)}" placeholder="nombre_opcion">
         <textarea data-q="${i}" data-opt="${j}" data-k="description" rows="1" placeholder="qué cubre esta opción">${esc(o.description)}</textarea>
         <button class="ghost" data-act="delopt" data-q="${i}" data-opt="${j}" title="Quitar opción">✕</button></div>`).join("") +
-      `<button data-act="addopt" data-q="${i}">+ opción</button>`;
+      `<button data-act="addopt" data-q="${i}">+ opción</button> ` +
+      (app.questions.some((o) => o.id === companionId(q.id))
+        ? `<span class="muted">Con Noul compañera <code>${esc(companionId(q.id))}</code>: si dice que no, ninguna opción encaja.</span>`
+        : `<button data-act="companion" data-q="${i}" title="Una Choice siempre elige una opción, aunque no encaje ninguna">+ Noul «¿encaja alguna opción?»</button>
+           <span class="muted">Mejor que una opción "otro": no le quita probabilidad a las opciones reales.</span>`);
   } else if (q.type === "score") {
     crit = `<label>Niveles, de menor a mayor (cada uno una situación que se entienda sola)</label>` +
       q.levels.map((l, j) => `<div class="lvl"><span class="n">${j}</span><textarea data-q="${i}" data-lvl="${j}" rows="1">${esc(l)}</textarea>
@@ -298,16 +315,22 @@ async function run(): Promise<void> {
 }
 
 const nClass = (p: number): string => (p >= YES_AT ? "yes" : p <= NO_AT ? "no" : "mid");
-function cellFor(meta: QuestionMeta, a: Answers[string] | undefined): string {
+function cellFor(meta: QuestionMeta, a: Answers[string] | undefined, companion?: Answers[string]): string {
   if (!a) return "—";
+  if (meta.type === "choice" && companion?.noul !== undefined && companion.noul <= NO_AT)
+    return `<span class="muted" title="La Noul compañera dice que no encaja ninguna opción (${companion.noul.toFixed(2)}); la Choice eligió ${esc(a.choice)}">ninguna encaja</span>`;
   if (meta.type === "noul" && a.noul !== undefined) return `<span class="${nClass(a.noul)}">${a.noul.toFixed(2)}</span>`;
   if (meta.type === "choice" && a.choice !== undefined) return `${esc(a.choice)} <span class="muted">${(a.probabilities?.[a.choice] ?? 0).toFixed(2)}</span>`;
   if (meta.type === "score" && a.score !== undefined) return a.score.toFixed(2);
   return esc(JSON.stringify(a));
 }
 const argmax = (p: Record<string, number> = {}): string | undefined => Object.entries(p).sort((a, b) => b[1] - a[1])[0]?.[0];
-function bars(pairs: [string, number][], total: number): string {
-  return pairs.map(([label, n]) => `<div class="bar"><span title="${esc(label)}">${esc(label)}</span><div class="track"><div class="fill" style="width:${total ? (n / total) * 100 : 0}%"></div></div><span class="muted">${n}</span></div>`).join("");
+function bars(pairs: [string, number][], total: number, code = false): string {
+  return pairs.map(([label, n]) => {
+    const pct = total ? Math.round((n / total) * 100) : 0;
+    return `<div class="bar"><div class="label">${code ? `<code>${esc(label)}</code>` : esc(label)}</div>
+      <div class="line"><div class="track"><div class="fill" style="width:${pct}%"></div></div><span class="count">${n} · ${pct}%</span></div></div>`;
+  }).join("");
 }
 function renderResults(): void {
   const R = app.results;
@@ -319,7 +342,7 @@ function renderResults(): void {
       if (!it) return `<tr><td class="muted">${i}</td><td colspan="${R.qMeta.length + 1}" class="muted">pendiente…</td></tr>`;
       const pre = firstCol ? `<td class="clip">${esc(fmtCell(row[firstCol]))}</td>` : "";
       if (it.error !== undefined) return `<tr class="clickable" data-k="${k}"><td class="muted">${i}</td>${pre}<td colspan="${R.qMeta.length}" class="no">error: ${esc(it.error.slice(0, 200))}</td></tr>`;
-      return `<tr class="clickable" data-k="${k}"><td class="muted">${i}</td>${pre}${R.qMeta.map((m) => `<td>${cellFor(m, it.answers[m.id])}</td>`).join("")}</tr>`;
+      return `<tr class="clickable" data-k="${k}"><td class="muted">${i}</td>${pre}${R.qMeta.map((m) => `<td>${cellFor(m, it.answers[m.id], it.answers[companionId(m.id)])}</td>`).join("")}</tr>`;
     }).join("") + "</table>";
   const done = R.items.flatMap((x) => (x && x.error === undefined ? [x.answers] : []));
   $("summary").innerHTML = R.qMeta.map((m) => {
@@ -330,13 +353,20 @@ function renderResults(): void {
       const y = ans.filter((a) => (a.noul ?? 0) >= YES_AT).length, n = ans.filter((a) => (a.noul ?? 1) <= NO_AT).length;
       body = bars([[`sí (≥${YES_AT})`, y], ["sin decidir", ans.length - y - n], [`no (≤${NO_AT})`, n]], ans.length);
     } else if (m.type === "choice") {
-      body = bars(m.options.map((o) => [o, ans.filter((a) => a.choice === o).length]), ans.length);
+      const comp = companionId(m.id);
+      const fits = (a: Answers): boolean => (a[comp]?.noul ?? 1) > NO_AT;
+      const rows = done.filter((a) => a[m.id]);
+      const pairs: [string, number][] = m.options.map((o) => [o, rows.filter((a) => fits(a) && a[m.id].choice === o).length]);
+      if (R.qMeta.some((x) => x.id === comp)) pairs.push([`ninguna encaja (${comp} ≤ ${NO_AT})`, rows.filter((a) => !fits(a)).length]);
+      body = bars(pairs, ans.length, true);
     } else {
       const mean = ans.reduce((s, a) => s + (a.score ?? 0), 0) / ans.length;
       body = `<div class="muted">media ${mean.toFixed(2)} · nivel más probable:</div>` +
-        bars(m.levels.map((l, j) => [`${j} · ${l}`, ans.filter((a) => argmax(a.probabilities) === String(j)).length]), ans.length);
+        bars(m.levels.map((l, j) => [`${j}. ${l}`, ans.filter((a) => argmax(a.probabilities) === String(j)).length]), ans.length);
     }
-    return `<div class="sumcard"><b>${esc(m.id)}</b> <span class="muted">${m.type} · ${ans.length} filas</span>${body}</div>`;
+    const q = app.questions.find((x) => x.id === m.id);
+    return `<div class="sumcard"><div class="head"><b>${esc(m.id)}</b> <span class="muted">${m.type} · ${ans.length} filas</span></div>
+      ${q?.instructions ? `<div class="muted" style="margin-bottom:6px">${esc(q.instructions)}</div>` : ""}${body}</div>`;
   }).join("");
 }
 
@@ -523,6 +553,7 @@ ql.onclick = (e) => {
     case "mvup": swap(Q, i, i - 1); break;
     case "mvdown": swap(Q, i, i + 1); break;
     case "addopt": q.options.push({ name: "", description: "" }); break;
+    case "companion": Q.splice(i + 1, 0, companionFor(q)); break;
     case "delopt": q.options.splice(Number(d.opt), 1); break;
     case "addlvl": q.levels.push(""); break;
     case "dellvl": q.levels.splice(Number(d.lvl), 1); break;

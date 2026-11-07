@@ -24,9 +24,12 @@ Question types:
   describe what true and false mean; write \`false_criterion\` as a concrete situation ("the package
   arrived on time"), not as "not X".
 - choice: "Which of these options?" Returns one option plus a probability per option. Options have
-  no order. A choice always picks something, so when the options may not cover every row, add a
-  companion noul that asks whether any option fits (e.g. "Does \`record.text\` mention any of our
-  products?"); do not add an "other"/"none" option.
+  no order. A choice always picks something, even when nothing fits. So for every choice, add a
+  companion noul with id \`<choice id>_encaja\` that asks whether any of its options fits the row
+  (e.g. "Does \`record.text\` mention any of our products?"), placed right after the choice. Code
+  reads the choice only when the companion says yes. Skip the companion only when the options
+  cover every possible row by construction. Never add an "other"/"none" option: it competes with
+  the real options for probability.
 - score: "Which level?" on an ordered scale you define (3-5 levels, lowest first). Each level is a
   situation that makes sense read on its own ("The customer mentions a minor inconvenience"), not
   relative wording ("more upset than the previous level").
