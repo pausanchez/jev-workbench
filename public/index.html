@@ -94,6 +94,10 @@ dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--p
   max-width: min(900px, 94vw); width: 900px; padding: 16px 18px; }
 dialog::backdrop { background: rgba(0,0,0,.35); }
 .muted { color: var(--muted); }
+.formats { font-size: 12.5px; color: var(--muted); margin: -4px 0 12px; }
+.formats summary { cursor: pointer; color: var(--accent); }
+.formats ul { margin: 6px 0; padding-left: 18px; } .formats li { margin: 3px 0; }
+.formats p { margin: 6px 0 0; }
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg);
   padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
 .toast.show { opacity: 1; }
@@ -112,8 +116,20 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
 
 <section id="s-data">
   <h2><span>1</span>Dataset</h2>
-  <p class="hint">CSV (coma, punto y coma o tab), JSON (array de objetos) o JSONL. Cada fila se convierte en el state
+  <p class="hint">Sube un fichero o pega los datos. Cada fila se convierte en el state
     <code>{"context": …, "record": {columna: valor}}</code>. Marca solo las columnas que las preguntas necesitan: cada campo irrelevante resta precisión.</p>
+  <details class="formats">
+    <summary>Formatos aceptados</summary>
+    <ul>
+      <li><b>CSV</b> (<code>.csv</code>, <code>.tsv</code>, <code>.txt</code>): la primera fila es la cabecera con los nombres de columna. El separador (coma, punto y coma o tab) se detecta solo. Textos con comas o saltos de línea, entre comillas <code>"…"</code> (como exportan Excel y Google Sheets).</li>
+      <li><b>JSON</b>: una lista de objetos, <code>[{"subject": "…", "message": "…"}, …]</code>, o <code>{"rows": [ … ]}</code>. Los valores anidados se envían tal cual dentro de <code>record</code>.</li>
+      <li><b>JSONL</b>: un objeto JSON por línea.</li>
+    </ul>
+    <p><b>Codificación UTF-8</b> (en Excel: "CSV UTF-8"); con otra, los acentos pueden salir mal.
+      <b>No se aceptan</b> <code>.xlsx</code> ni parquet: guárdalos antes como CSV.
+      No hace falta limpiar el fichero: las columnas se eligen abajo (desmarca IDs y la columna de la etiqueta si el dataset está etiquetado).
+      Sin límite de filas; a partir de unos ~5 MB la página no puede recordar las filas al recargar (las preguntas sí).</p>
+  </details>
   <div class="row">
     <input type="file" id="file" accept=".csv,.tsv,.json,.jsonl,.txt">
     <button id="pasteBtn">Pegar datos…</button>
@@ -195,6 +211,7 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
 
 <dialog id="pasteDlg">
   <h3 style="margin-top:0">Pegar datos</h3>
+  <p class="hint">CSV con cabecera (por ejemplo, copiado de Google Sheets o Excel), una lista JSON de objetos, o JSONL (un objeto por línea).</p>
   <textarea id="pasteArea" style="min-height:260px;font-family:ui-monospace,Menlo,monospace;font-size:12px"></textarea>
   <div class="row" style="margin-top:10px;justify-content:flex-end"><button id="pasteCancel">Cancelar</button><button class="primary" id="pasteOk">Cargar</button></div>
 </dialog>
@@ -214,15 +231,22 @@ const app = {
   goal: "", nq: 8, questions: [], notes: null, results: null, runRows: [], exTab: "json",
 };
 
-function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); }
+let toastTimer;
+function toast(msg, ms = 1800) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), ms);
+}
+const FORMAT_HELP = "Usa CSV con cabecera, JSON (lista de objetos) o JSONL, en UTF-8.";
 
 // ---------- persistence (per-viewer convenience only) ----------
 const KEY = "jev-workbench-v1";
 function save() {
   const { rows, results, runRows, ...rest } = app;
   try { localStorage.setItem(KEY, JSON.stringify(rest)); } catch (e) {}
-  try { localStorage.setItem(KEY + "-rows", JSON.stringify(rows)); } catch (e) { try { localStorage.removeItem(KEY + "-rows"); } catch (e2) {} }
+  try { localStorage.setItem(KEY + "-rows", JSON.stringify(rows)); rowsSaved = true; }
+  catch (e) { rowsSaved = false; try { localStorage.removeItem(KEY + "-rows"); } catch (e2) {} }
 }
+let rowsSaved = true;
 function load() {
   try { Object.assign(app, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
   try { app.rows = JSON.parse(localStorage.getItem(KEY + "-rows") || "[]"); } catch (e) { app.rows = []; }
@@ -252,7 +276,13 @@ function parseCSV(text) {
   return out.map((r) => Object.fromEntries(header.map((h, i) => [h, r[i] ?? ""])));
 }
 function parseData(text, name = "") {
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  if (["xlsx", "xls", "ods", "numbers"].includes(ext) || text.startsWith("PK"))
+    throw new Error("Es una hoja de cálculo. Guárdala como \"CSV UTF-8\" y súbela de nuevo.");
+  if (ext === "parquet" || text.startsWith("PAR1"))
+    throw new Error("Parquet no está soportado. Conviértelo a CSV, p. ej. pandas.read_parquet(f).to_csv(\"datos.csv\", index=False).");
   const t = text.trim();
+  if (!t) throw new Error("El fichero está vacío.");
   if (t.startsWith("[")) return JSON.parse(t);
   if (t.startsWith("{")) {
     try { const one = JSON.parse(t); return Array.isArray(one) ? one : (Array.isArray(one.rows) ? one.rows : [one]); }
@@ -262,11 +292,15 @@ function parseData(text, name = "") {
 }
 function setRows(rows) {
   rows = rows.filter((r) => r && typeof r === "object" && !Array.isArray(r));
-  if (!rows.length) { toast("No se encontraron filas"); return; }
+  if (!rows.length) { toast("No se encontraron filas. " + FORMAT_HELP, 5000); return; }
   const cols = [];
   for (const r of rows.slice(0, 500)) for (const k of Object.keys(r)) if (!cols.includes(k)) cols.push(k);
   app.rows = rows; app.columns = cols; app.selected = cols.slice(); app.results = null;
-  resample(); renderAll(); save();
+  resample(); save(); renderAll();
+}
+function readError(err) {
+  const known = /hoja de cálculo|Parquet|vacío/.test(err.message);
+  toast(known ? err.message : `No se pudo leer el fichero (${err.message}). ${FORMAT_HELP}`, 7000);
 }
 function resample() {
   const n = Math.min(app.sampleSize, app.rows.length);
@@ -325,7 +359,9 @@ function normalizeQ(q) {
 
 // ---------- render: dataset ----------
 function renderData() {
-  $("dataInfo").textContent = app.rows.length ? `${app.rows.length} filas · ${app.columns.length} columnas` : "sin datos";
+  $("dataInfo").textContent = app.rows.length
+    ? `${app.rows.length} filas · ${app.columns.length} columnas${rowsSaved ? "" : " · demasiado grande para recordarlo al recargar la página"}`
+    : "sin datos";
   $("cols").innerHTML = app.columns.map((c) => `<span class="chip ${app.selected.includes(c) ? "on" : ""}" data-col="${esc(c)}">${esc(c)}</span>`).join("")
     || '<span class="muted">Carga un fichero para ver sus columnas.</span>';
   $("dropEmpty").checked = app.dropEmpty; $("context").value = app.context; $("sampleSize").value = app.sampleSize;
@@ -597,14 +633,15 @@ function renderAll() { renderData(); renderNotes(); renderQuestions(); renderExp
 // ---------- events ----------
 $("file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
-  try { setRows(parseData(await f.text(), f.name)); toast(`${app.rows.length} filas cargadas`); } catch (err) { toast("No se pudo leer: " + err.message); }
+  try { setRows(parseData(await f.text(), f.name)); toast(`${app.rows.length} filas cargadas`); } catch (err) { readError(err); }
+  e.target.value = "";
 };
 $("pasteBtn").onclick = () => $("pasteDlg").showModal();
 $("exampleBtn").onclick = async () => {
   try { setRows(parseData(await (await fetch("/api/example")).text())); toast(`${app.rows.length} filas de ejemplo`); } catch (err) { toast("No se pudo cargar el ejemplo"); }
 };
 $("pasteCancel").onclick = () => $("pasteDlg").close();
-$("pasteOk").onclick = () => { try { setRows(parseData($("pasteArea").value)); $("pasteDlg").close(); } catch (err) { toast("No se pudo leer: " + err.message); } };
+$("pasteOk").onclick = () => { try { setRows(parseData($("pasteArea").value)); $("pasteDlg").close(); } catch (err) { readError(err); } };
 $("cols").onclick = (e) => {
   const c = e.target.closest("[data-col]")?.dataset.col; if (c === undefined) return;
   app.selected = app.selected.includes(c) ? app.selected.filter((x) => x !== c) : app.columns.filter((x) => x === c || app.selected.includes(x));
