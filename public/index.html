@@ -138,7 +138,7 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
 <section id="s-gen">
   <h2><span>2</span>Generar preguntas con Opus 5.5</h2>
   <p class="hint">Describe qué quiere decidir tu aplicación con estos datos. Opus ve el objetivo, las columnas y la muestra, y propone preguntas atómicas para Jev (Choice, Noul, Score) más un boceto de la lógica de decisión, que va en tu código.</p>
-  <label for="goal">Objetivo</label>
+  <label for="goal">Objetivo (opcional: si lo dejas vacío, Opus revisa la muestra y propone uno)</label>
   <textarea id="goal" placeholder="Ej.: Enrutar cada ticket al equipo correcto y detectar los que hay que escalar porque el cliente amenaza con irse."></textarea>
   <div class="row" style="margin-top:10px">
     <label style="margin:0">Nº de preguntas</label><input type="number" id="nq" min="1" max="40" value="8">
@@ -342,9 +342,14 @@ function renderNotes() {
   const n = app.notes;
   if (!n) { $("genNotes").innerHTML = ""; return; }
   $("genNotes").innerHTML =
+    (n.goal_used ? `<div class="note"><h3>${n.inferred ? "Objetivo que propone Opus" : "Objetivo usado"}</h3>${esc(n.goal_used)}${n.inferred ? ' <button id="useGoal" style="margin-left:8px">Usar como objetivo</button>' : ""}</div>` : "") +
+    (n.suggested_goals?.length ? `<div class="note"><h3>Otros objetivos posibles con estos datos (clic para usarlo y vuelve a generar)</h3><div class="cols">${n.suggested_goals.map((g, j) => `<span class="chip" data-goal="${j}">${esc(g)}</span>`).join("")}</div></div>` : "") +
     `<div class="note"><h3>Boceto de la lógica de decisión (va en tu código)</h3>${esc(n.decision_sketch)}</div>` +
     (n.code_notes?.length ? `<div class="note"><h3>Mejor en código que en Jev</h3>${n.code_notes.map((x) => "• " + esc(x)).join("\n")}</div>` : "") +
     (n.state_columns?.length ? `<div class="note"><h3>Columnas recomendadas para el state</h3>${n.state_columns.map(esc).join(", ")} <button id="applyCols" style="margin-left:8px">Usar estas</button></div>` : "");
+  const setGoal = (g) => { app.goal = g; $("goal").value = g; updateGenBtn(); save(); $("goal").focus(); };
+  if ($("useGoal")) $("useGoal").onclick = () => setGoal(n.goal_used);
+  $("genNotes").querySelectorAll("[data-goal]").forEach((el) => (el.onclick = () => setGoal(n.suggested_goals[+el.dataset.goal])));
   const b = $("applyCols");
   if (b) b.onclick = () => { app.selected = app.columns.filter((c) => n.state_columns.includes(c)); renderAll(); save(); toast("Columnas actualizadas"); };
 }
@@ -609,13 +614,15 @@ $("dropEmpty").onchange = (e) => { app.dropEmpty = e.target.checked; renderExpor
 $("context").oninput = (e) => { app.context = e.target.value; renderExport(); save(); };
 $("sampleSize").onchange = (e) => { app.sampleSize = Math.max(1, +e.target.value || 15); resample(); renderData(); renderExport(); save(); };
 $("resample").onclick = () => { resample(); renderData(); renderExport(); save(); };
-$("goal").oninput = (e) => { app.goal = e.target.value; save(); };
+function updateGenBtn() { $("genBtn").textContent = app.goal.trim() ? "Generar" : "Sugerir a partir de la muestra"; }
+$("goal").oninput = (e) => { app.goal = e.target.value; updateGenBtn(); save(); };
 $("nq").onchange = (e) => { app.nq = +e.target.value || 8; save(); };
 
 $("genBtn").onclick = async () => {
   if (!app.rows.length) return toast("Carga un dataset primero");
-  if (!app.goal.trim()) return toast("Escribe el objetivo");
-  $("genBtn").disabled = true; $("genInfo").textContent = "Opus está pensando… (suele tardar 30–90 s)";
+  const inferred = !app.goal.trim();
+  $("genBtn").disabled = true;
+  $("genInfo").textContent = inferred ? "Opus está revisando la muestra para proponer un objetivo… (suele tardar 30–90 s)" : "Opus está pensando… (suele tardar 30–90 s)";
   try {
     const sample = app.sampleIdx.map((i) => Object.fromEntries(app.selected.map((c) => [c, app.rows[i][c]])));
     const r = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -624,7 +631,8 @@ $("genBtn").onclick = async () => {
     const qs = out.questions.map(normalizeQ);
     if ($("replaceQs").checked) app.questions = qs;
     else { for (const q of qs) { while (app.questions.some((o) => o.id === q.id)) q.id += "_2"; app.questions.push(q); } }
-    app.notes = { decision_sketch: out.decision_sketch, code_notes: out.code_notes, state_columns: out.state_columns };
+    app.notes = { decision_sketch: out.decision_sketch, code_notes: out.code_notes, state_columns: out.state_columns,
+      goal_used: out.goal_used, suggested_goals: out.suggested_goals, inferred };
     $("genInfo").textContent = `${qs.length} preguntas · ${out.usage.input_tokens + out.usage.output_tokens} tokens · $${out.cost_usd.toFixed(3)} · ${out.seconds.toFixed(0)} s`;
     renderAll(); save(); location.hash = "s-q";
   } catch (e) { $("genInfo").innerHTML = `<span class="no">${esc(e.message)}</span>`; }
@@ -714,7 +722,7 @@ $("results").onclick = (e) => {
 $("rowClose").onclick = () => $("rowDlg").close();
 $("rowCopy").onclick = async () => { try { await navigator.clipboard.writeText(JSON.stringify(openRow, null, 2)); toast("Petición copiada"); } catch (e) { toast("No se pudo copiar"); } };
 
-load(); $("goal").value = app.goal; $("nq").value = app.nq;
+load(); $("goal").value = app.goal; $("nq").value = app.nq; updateGenBtn();
 if (app.rows.length && !app.sampleIdx.length) resample();
 renderAll(); refreshStatus();
 </script>

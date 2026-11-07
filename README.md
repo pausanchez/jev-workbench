@@ -5,7 +5,10 @@ Herramienta local para diseñar preguntas de [TypeSafe Jev](https://docs.typesaf
 1. **Dataset**: carga un CSV, JSON o JSONL, elige qué columnas van al state y saca una muestra.
 2. **Generar**: Opus 5.5 lee el objetivo, las columnas y la muestra, y propone preguntas atómicas
    (Choice, Noul, Score), un boceto de la lógica de decisión (que va en tu código), qué conviene
-   resolver en código y qué columnas meter en el state.
+   resolver en código y qué columnas meter en el state. El objetivo es opcional: si lo dejas
+   vacío, Opus revisa la muestra, propone el objetivo más útil y genera las preguntas para él.
+   Siempre sugiere además otros objetivos posibles con esos datos; un clic los pone como objetivo
+   para volver a generar.
 3. **Preguntas**: todo es editable: IDs, tipo, instrucciones, opciones (añadir/quitar), niveles
    (añadir/quitar/reordenar), criterios de sí/no, tags. Activa o desactiva preguntas una a una o
    por tag. Guarda y carga el proyecto como JSON.

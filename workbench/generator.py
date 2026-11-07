@@ -64,7 +64,16 @@ Return the requested number of questions (fewer if the goal needs fewer). `id` i
 unique. `tags` are 1-3 short labels grouping the question by purpose (e.g. "routing", "risk").
 Fill only the fields that apply to the type: `options` for choice, `levels` for score,
 `true_criterion`/`false_criterion` for noul (both may be empty strings). `why` is one sentence on
-what decision the question feeds. Write question text in the language of the dataset."""
+what decision the question feeds. Write question text in the language of the dataset.
+
+`suggested_goals`: 3-5 other concrete things an application could decide with this data (one
+sentence each, in the language of the dataset), different from the goal you used, so the user can
+pick one and generate again. `goal_used` restates in one sentence the goal the questions serve.
+
+When `goal` is empty, the user has no goal yet. Read the sample and work out what the data is and
+what an application handling it would most plausibly need to decide (route it, prioritise it,
+filter it, flag risks, extract a category...). Pick the single most useful goal, state it in
+`goal_used`, and write the questions for it."""
 
 SCHEMA = {
     "type": "object",
@@ -100,8 +109,10 @@ SCHEMA = {
         "state_columns": {"type": "array", "items": {"type": "string"}},
         "decision_sketch": {"type": "string"},
         "code_notes": {"type": "array", "items": {"type": "string"}},
+        "goal_used": {"type": "string"},
+        "suggested_goals": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["questions", "state_columns", "decision_sketch", "code_notes"],
+    "required": ["questions", "state_columns", "decision_sketch", "code_notes", "goal_used", "suggested_goals"],
     "additionalProperties": False,
 }
 
@@ -115,7 +126,7 @@ def _clip(value):
 def build_prompt(goal: str, context: str, columns: list, sample: list, n_questions: int) -> str:
     rows = [{k: _clip(v) for k, v in row.items()} for row in sample[:MAX_SAMPLE_ROWS]]
     return json.dumps({
-        "goal": goal,
+        "goal": goal.strip() or None,
         "shared_context": context or None,
         "columns_available": columns,
         "sample_rows": rows,
