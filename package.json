@@ -1,0 +1,26 @@
+{
+  "name": "jev-workbench",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Draft, edit, export and run TypeSafe Jev questions over a dataset",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "esbuild src/client/app.ts --bundle --format=esm --target=es2022 --sourcemap --outfile=public/app.js",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && node src/server/server.ts",
+    "dev": "npm run build -- --watch=forever & node --watch src/server/server.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "@typesafe-ai/sdk": "^0.7.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}
