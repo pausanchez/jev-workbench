@@ -6,13 +6,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
+import { OPUS_MAX_SAMPLE_ROWS, OPUS_MAX_VALUE_CHARS } from "../shared/types.ts";
 import type { GenerateRequest, GenerateResponse, Row } from "../shared/types.ts";
 
 export const MODEL = "claude-opus-5-5";
 const EFFORT = "medium";
 const PRICE_PER_MTOK = { input: 4.0, output: 20.0 }; // USD
-const MAX_SAMPLE_ROWS = 25;
-const MAX_VALUE_CHARS = 600;
 
 const SYSTEM = `You design questions for Jev, TypeSafe's System One model. Jev answers typed questions
 about a JSON \`state\` with calibrated probabilities. It is fast and cheap but does not reason step by
@@ -100,7 +99,7 @@ let client: Anthropic | undefined;
 
 function clip(row: Row): Row {
   return Object.fromEntries(Object.entries(row).map(([k, v]) =>
-    [k, typeof v === "string" && v.length > MAX_VALUE_CHARS ? v.slice(0, MAX_VALUE_CHARS) + "…" : v]));
+    [k, typeof v === "string" && v.length > OPUS_MAX_VALUE_CHARS ? v.slice(0, OPUS_MAX_VALUE_CHARS) + "…" : v]));
 }
 
 export function buildPrompt(req: GenerateRequest): string {
@@ -108,7 +107,7 @@ export function buildPrompt(req: GenerateRequest): string {
     goal: req.goal.trim() || null,
     shared_context: req.context || null,
     columns_available: req.columns,
-    sample_rows: req.sample.slice(0, MAX_SAMPLE_ROWS).map(clip),
+    sample_rows: req.sample.slice(0, OPUS_MAX_SAMPLE_ROWS).map(clip),
     number_of_questions: req.n_questions,
   }, null, 1);
 }

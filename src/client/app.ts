@@ -1,7 +1,7 @@
 // The Workbench page: dataset → generate with Opus → edit → export → run with Jev.
 
 import {
-  toJev, toJevQuestions,
+  OPUS_MAX_SAMPLE_ROWS, OPUS_MAX_VALUE_CHARS, toJev, toJevQuestions,
   type Answers, type DraftQuestion, type GenerateResponse, type JsonValue, type QuestionType, type Row,
   type RunResponse, type RunResult, type Status,
 } from "../shared/types.ts";
@@ -80,6 +80,8 @@ function load(): void {
   try { Object.assign(app, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { /* ignore */ }
   try { app.rows = JSON.parse(localStorage.getItem(KEY + "-rows") || "[]"); } catch { app.rows = []; }
   if (!(app.exTab in EXPORT_TABS)) app.exTab = "json";
+  app.sampleSize = clampSample(app.sampleSize);
+  if (app.sampleIdx.length > app.sampleSize) app.sampleIdx = app.sampleIdx.slice(0, app.sampleSize);
   app.results = null; app.runRows = [];
 }
 
@@ -157,6 +159,20 @@ function normalizeQ(q: Partial<DraftQuestion>): DraftQuestion {
 }
 
 // ---------- render: dataset ----------
+const clampSample = (n: number): number => Math.min(OPUS_MAX_SAMPLE_ROWS, Math.max(1, Math.round(n) || 15));
+/** Says exactly what Opus will receive: how many rows and whether any value gets cut. */
+function sampleNote(): string {
+  let cut = 0;
+  for (const i of app.sampleIdx) for (const c of app.selected) {
+    const v = app.rows[i]?.[c];
+    if (typeof v === "string" && v.length > OPUS_MAX_VALUE_CHARS) cut++;
+  }
+  const rows = `Opus verá ${app.sampleIdx.length} filas al azar (máx. ${OPUS_MAX_SAMPLE_ROWS}), solo con las columnas marcadas.`;
+  const chars = cut
+    ? ` <span class="mid">${cut} ${cut === 1 ? "valor supera" : "valores superan"} los ${OPUS_MAX_VALUE_CHARS.toLocaleString("es")} caracteres y Opus solo verá su principio</span>; Jev siempre recibe la fila completa.`
+    : ` Textos de más de ${OPUS_MAX_VALUE_CHARS.toLocaleString("es")} caracteres se recortan solo para Opus; Jev recibe la fila completa.`;
+  return esc(rows) + chars;
+}
 const fmtCell = (v: JsonValue | undefined): string => (typeof v === "object" && v !== null ? JSON.stringify(v) : String(v ?? ""));
 function renderData(): void {
   $("dataInfo").textContent = app.rows.length
@@ -167,7 +183,7 @@ function renderData(): void {
   $("dropEmpty").checked = app.dropEmpty;
   $("context").value = app.context;
   $("sampleSize").value = String(app.sampleSize);
-  $("sampleInfo").textContent = app.rows.length ? `${app.sampleIdx.length} filas en la muestra` : "";
+  $("sampleInfo").innerHTML = app.rows.length ? sampleNote() : "";
   if (!app.rows.length) { $("preview").innerHTML = ""; return; }
   const cols = app.columns;
   $("preview").innerHTML = `<table><tr><th>#</th>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr>` +
@@ -455,7 +471,7 @@ $("cols").onclick = (e) => {
 };
 $("dropEmpty").onchange = () => { app.dropEmpty = $("dropEmpty").checked; renderExport(); save(); };
 $("context").oninput = () => { app.context = $("context").value; renderExport(); save(); };
-$("sampleSize").onchange = () => { app.sampleSize = Math.max(1, Number($("sampleSize").value) || 15); resample(); renderData(); renderExport(); save(); };
+$("sampleSize").onchange = () => { app.sampleSize = clampSample(Number($("sampleSize").value)); resample(); renderData(); renderExport(); save(); };
 $("resample").onclick = () => { resample(); renderData(); renderExport(); save(); };
 
 // ---------- events: generate ----------

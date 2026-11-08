@@ -49,6 +49,7 @@ try {
   await (loadProject as unknown as { uploadFile(path: string): Promise<void> }).uploadFile(PROJECT);
   await page.waitForFunction(() => document.querySelectorAll(".qcard").length > 0);
   await page.evaluate(() => document.getElementById("toast")?.classList.remove("show"));
+  await new Promise((r) => setTimeout(r, 400)); // let the toast fade out
   await shot(page, "#s-data", "1-dataset.png", 900);
 
   // 2 · Generar (the notes come from the saved project)

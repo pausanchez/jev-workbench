@@ -104,7 +104,11 @@ resultados de la página. Si quieres conservar las preguntas, pulsa antes **Guar
 - **Contexto compartido** (opcional): una o dos frases que el modelo no puede saber. Por ejemplo:
   "Son llamadas de venta de Parlora, una plataforma de chatbots. Los asistentes marcados como
   (Parlora) son nuestros comerciales."
-- **Muestra**: las filas que verá Opus para proponer preguntas. Con 15 a 25 suele bastar.
+- **Muestra para Opus**: cuántas filas, elegidas al azar, verá Opus para proponer las preguntas
+  (de 1 a 25; con 15–20 suele bastar). Opus las recibe todas juntas en una sola consulta, solo con
+  las columnas marcadas. Si un texto pasa de 4.000 caracteres, Opus solo ve su principio y la
+  página te avisa; Jev, en cambio, recibe siempre cada fila completa. «Volver a muestrear» elige
+  otras filas.
 
 ### 2 · Generar: deja que Opus proponga las preguntas
 

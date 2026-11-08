@@ -5,6 +5,11 @@ import type { JsonValue, Question as JevQuestion, Questions as JevQuestions, Sco
 
 export type { JevQuestions, JsonValue };
 
+/** What Opus sees when drafting questions: at most this many sample rows, each value cut to this
+ * many characters. Long enough for a sales-call transcript; Jev always gets the full row. */
+export const OPUS_MAX_SAMPLE_ROWS = 25;
+export const OPUS_MAX_VALUE_CHARS = 4000;
+
 export type QuestionType = "noul" | "choice" | "score";
 
 export interface ChoiceOption {
