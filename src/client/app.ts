@@ -597,6 +597,20 @@ $("rowCopy").onclick = async () => {
   try { await navigator.clipboard.writeText(JSON.stringify(openRow, null, 2)); toast("Petición copiada"); } catch { toast("No se pudo copiar"); }
 };
 
+// ---------- reset ----------
+// Clears everything this page remembers and reloads it empty. Spend counters and runs/calls.jsonl
+// live on the server and are kept.
+$("resetBtn").onclick = () => {
+  const hasWork = app.rows.length > 0 || app.questions.length > 0 || app.goal.trim() !== "";
+  if (hasWork && !confirm(
+    "¿Empezar de nuevo?\n\nSe borrarán el dataset, las columnas elegidas, el contexto, el objetivo, las preguntas y los resultados de esta página. No se puede deshacer.\n\nSi quieres conservar las preguntas, cancela y pulsa antes «Guardar proyecto».",
+  )) return;
+  try { localStorage.removeItem(KEY); localStorage.removeItem(KEY + "-rows"); } catch { /* storage unavailable */ }
+  history.replaceState(null, "", location.pathname);
+  window.scrollTo(0, 0); // otherwise the browser restores the old scroll position on reload
+  location.reload();
+};
+
 // ---------- start ----------
 load();
 $("goal").value = app.goal; $("nq").value = String(app.nq); updateGenBtn();

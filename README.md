@@ -87,7 +87,9 @@ pídele a Claude Code que la arranque otra vez.
 
 ## Cómo se usa, paso a paso
 
-La página tiene cinco pasos, de arriba abajo.
+La página tiene cinco pasos, de arriba abajo. Para empezar de cero con otros datos, pulsa
+**Empezar de nuevo** (arriba a la derecha): borra el dataset, las preguntas, el objetivo y los
+resultados de la página. Si quieres conservar las preguntas, pulsa antes **Guardar proyecto**.
 
 ### 1 · Dataset: carga tus datos
 

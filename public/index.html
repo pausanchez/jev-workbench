@@ -27,6 +27,8 @@ nav { display: flex; gap: 4px; flex-wrap: wrap; }
 nav a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 6px; }
 nav a:hover { background: var(--soft); color: var(--ink); }
 #status { margin-left: auto; color: var(--muted); font-size: 12px; }
+#resetBtn { font-size: 12.5px; padding: 4px 10px; }
+#resetBtn:hover { border-color: var(--no); color: var(--no); }
 main { max-width: 1180px; margin: 0 auto; padding: 16px 20px 80px; }
 section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin: 16px 0; }
 section > h2 { margin: 0 0 4px; font-size: 15px; }
@@ -116,6 +118,7 @@ dialog::backdrop { background: rgba(0,0,0,.35); }
     <a href="#s-export">4 · Exportar</a><a href="#s-run">5 · Ejecutar</a>
   </nav>
   <div id="status">…</div>
+  <button id="resetBtn" title="Borra el dataset, las preguntas, el objetivo y los resultados de esta página">Empezar de nuevo</button>
 </header>
 <main>
 
