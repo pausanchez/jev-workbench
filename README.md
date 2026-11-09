@@ -34,12 +34,11 @@ herramienta te propone también esas reglas, en el "boceto de la lógica de deci
 
 ## Qué necesitas
 
-1. **Acceso a este repositorio** en GitHub. Si no lo ves, pide al propietario que te invite.
-2. **Dos claves de API**, o que alguien de tu equipo te las pase:
+1. **Dos claves de API**, o que alguien de tu equipo te las pase:
    - **TypeSafe** (para Jev): en [console.typesafe.ai](https://console.typesafe.ai).
    - **Anthropic** (para Opus, el que redacta las preguntas): en
      [platform.claude.com](https://platform.claude.com).
-3. **Claude Code**, que hará la instalación por ti. Vale la app de escritorio de Claude (pestaña
+2. **Claude Code**, que hará la instalación por ti. Vale la app de escritorio de Claude (pestaña
    Code) o la versión de terminal.
 
 Las claves son como contraseñas: no las pegues en documentos compartidos ni en chats.
@@ -51,7 +50,7 @@ Las claves son como contraseñas: no las pegues en documentos compartidos ni en 
 1. Abre Claude Code en la carpeta donde quieras guardar la herramienta (por ejemplo, `Documentos`).
 2. Copia y pega este mensaje:
 
-   > Clona el repositorio privado de GitHub `pausanchez/jev-workbench` e instala lo que haga falta
+   > Clona el repositorio de GitHub `pausanchez/jev-workbench` e instala lo que haga falta
    > para usarlo (incluido Node.js 24 o superior si no lo tengo). Crea el fichero `.env` a partir de
    > `.env.example`, pero no me pidas las claves por el chat: dime qué fichero tengo que abrir para
    > pegarlas yo. Cuando las haya pegado, arranca la herramienta y dime qué dirección abrir en el

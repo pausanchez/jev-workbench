@@ -1,6 +1,6 @@
 {
   "goal": "",
-  "context": "Llamadas de venta de Parlora (plataforma no-code de chatbots para web y WhatsApp), grabadas con Fathom. Los asistentes marcados como (Parlora) son nuestros comerciales; el resto son clientes potenciales.",
+  "context": "Llamadas de venta de Parlora (plataforma no-code de chatbots para web y WhatsApp), grabadas con un grabador de reuniones. Los asistentes marcados como (Parlora) son nuestros comerciales; el resto son clientes potenciales.",
   "selected": [
     "title",
     "internal_attendees",
